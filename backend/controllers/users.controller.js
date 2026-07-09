@@ -14,7 +14,7 @@ function buildUserDocument({ name, email, photo, firebaseUid }) {
     firebaseUid,
     role: 'customer',
     status: 'active',
-    chefVerified: 'none',
+    chefStatus: 'none',
     createdAt: now,
     lastLogin: now
   };

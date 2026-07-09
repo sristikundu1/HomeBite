@@ -14,6 +14,17 @@ import Status from './pages/Status';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Cookies from './pages/Cookies';
+import BecomeChef from './pages/BecomeChef';
+import ApplicationStatus from './pages/ApplicationStatus';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import DashboardLayout from './layouts/DashboardLayout';
+import CustomerRoute from './routes/CustomerRoute';
+import DashboardHome from './pages/dashboard/DashboardHome';
+import DashboardProfile from './pages/dashboard/Profile';
+import DashboardSettings from './pages/dashboard/Settings';
+import DashboardNotFound from './pages/dashboard/NotFound';
+import AdminChefVerification from './pages/dashboard/AdminChefVerification';
+import AdminRoute from './routes/AdminRoute';
 
 function App() {
   return (
@@ -31,10 +42,42 @@ function App() {
           <Route path="/cooking-guides" element={<CookingGuides />} />
           <Route path="/gift-cards" element={<GiftCards />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/cook" element={<BecomeChef />} />
+          <Route
+            path="/application-status"
+            element={
+              <ProtectedRoute>
+                <ApplicationStatus />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/status" element={<Status />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
+        </Route>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <CustomerRoute>
+                <DashboardLayout />
+              </CustomerRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardHome />} />
+          <Route path="profile" element={<DashboardProfile />} />
+          <Route path="settings" element={<DashboardSettings />} />
+          <Route
+            path="admin/chef-verification"
+            element={
+              <AdminRoute>
+                <AdminChefVerification />
+              </AdminRoute>
+            }
+          />
+          <Route path="*" element={<DashboardNotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

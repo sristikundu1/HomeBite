@@ -10,6 +10,10 @@ import HelpCenter from "./pages/HelpCenter";
 import CookingGuides from './pages/CookingGuides';
 import GiftCards from './pages/GiftCards';
 import Community from './pages/Community';
+import Status from './pages/Status';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Cookies from './pages/Cookies';
 
 function App() {
   return (
@@ -27,6 +31,10 @@ function App() {
           <Route path="/cooking-guides" element={<CookingGuides />} />
           <Route path="/gift-cards" element={<GiftCards />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/status" element={<Status />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cookies" element={<Cookies />} />
         </Route>
       </Routes>
     </BrowserRouter>

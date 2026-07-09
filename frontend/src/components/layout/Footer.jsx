@@ -128,7 +128,7 @@ function Footer() {
           <p>© 2026 HomeBite. Crafted for home chefs and food lovers.</p>
           <div className="flex flex-wrap gap-4">
             <Link
-              to="/privacy-policy"
+              to="/privacy"
               className="transition hover:text-[var(--accent)]"
             >
               Privacy

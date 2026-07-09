@@ -1,0 +1,9 @@
+{
+  "name": "homebite",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install --prefix frontend && npm install --prefix backend",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev"
+  }
+}

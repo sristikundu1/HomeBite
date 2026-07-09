@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
-function getInitials(user) {
-  const name = user?.displayName?.trim();
-  const email = user?.email?.trim();
+function getInitials(user, dbUser) {
+  const name = dbUser?.name?.trim() || user?.displayName?.trim();
+  const email = dbUser?.email?.trim() || user?.email?.trim();
   const source = name || email || 'Guest User';
   const parts = source.split(/\s+/).filter(Boolean);
 
@@ -14,10 +14,12 @@ function getInitials(user) {
   return source.slice(0, 2).toUpperCase();
 }
 
-export default function UserAvatar({ user, className = '', interactive = false }) {
+export default function UserAvatar({ user, dbUser, className = '', interactive = false }) {
   const [imageError, setImageError] = useState(false);
-  const showImage = user?.photoURL && !imageError;
-  const initials = getInitials(user);
+  const photo = dbUser?.photo || user?.photoURL;
+  const name = dbUser?.name || user?.displayName;
+  const showImage = photo && !imageError;
+  const initials = getInitials(user, dbUser);
   const Component = interactive ? motion.span : 'span';
 
   return (
@@ -28,8 +30,8 @@ export default function UserAvatar({ user, className = '', interactive = false }
     >
       {showImage ? (
         <img
-          src={user.photoURL}
-          alt={user?.displayName || 'User avatar'}
+          src={photo}
+          alt={name || 'User avatar'}
           onError={() => setImageError(true)}
           className="h-full w-full rounded-full object-cover"
         />

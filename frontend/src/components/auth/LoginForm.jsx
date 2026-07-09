@@ -16,7 +16,7 @@ export default function LoginForm() {
   const [socialLoading, setSocialLoading] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const { login, googleSignIn, resetPassword } = useAuth();
+  const { login, googleSignIn, resetPassword, saveAuthenticatedUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
@@ -53,7 +53,8 @@ export default function LoginForm() {
         window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
 
-      await login(data.email, data.password);
+      const userCredential = await login(data.email, data.password);
+      await saveAuthenticatedUser(userCredential.user);
       toast.success('Welcome back!');
       navigate(redirectPath, { replace: true });
     } catch (error) {
@@ -101,7 +102,8 @@ export default function LoginForm() {
     setSocialLoading('Google');
 
     try {
-      await googleSignIn();
+      const userCredential = await googleSignIn();
+      await saveAuthenticatedUser(userCredential.user);
       toast.success('Signed in with Google.');
       navigate(redirectPath, { replace: true });
     } catch (error) {

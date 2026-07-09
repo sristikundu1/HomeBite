@@ -10,7 +10,7 @@ import { registerSchema } from '../../validation/registerSchema';
 import PasswordInput from './PasswordInput';
 
 export default function RegisterForm() {
-  const { register: createAccount, updateUserProfile } = useAuth();
+  const { register: createAccount, updateUserProfile, saveAuthenticatedUser } = useAuth();
   const navigate = useNavigate();
   const {
     register,
@@ -30,10 +30,16 @@ export default function RegisterForm() {
 
   const onSubmit = async (data) => {
     try {
-      await createAccount(data.email, data.password);
+      const userCredential = await createAccount(data.email, data.password);
       await updateUserProfile({
         displayName: data.name,
         photoURL: data.photoURL || null
+      });
+      await saveAuthenticatedUser({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        displayName: data.name,
+        photoURL: data.photoURL || ''
       });
       toast.success('Account created successfully.');
       navigate('/', { replace: true });

@@ -16,10 +16,11 @@ export default function UserMenu({ onAction }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
-  const { user, logout } = useAuth();
+  const { user, dbUser, logout } = useAuth();
   const navigate = useNavigate();
-  const displayName = user?.displayName || 'Guest User';
-  const email = user?.email || 'No Email';
+  const displayName = dbUser?.name || user?.displayName || 'Guest User';
+  const email = dbUser?.email || user?.email || 'No Email';
+  const role = dbUser?.role || 'Customer';
 
   const closeMenu = () => setIsOpen(false);
 
@@ -79,7 +80,7 @@ export default function UserMenu({ onAction }) {
         aria-expanded={isOpen}
         aria-controls="user-account-menu"
       >
-        <UserAvatar user={user} interactive className="h-[38px] w-[38px] lg:h-[42px] lg:w-[42px]" />
+        <UserAvatar user={user} dbUser={dbUser} interactive className="h-[38px] w-[38px] lg:h-[42px] lg:w-[42px]" />
       </button>
 
       <AnimatePresence>
@@ -95,11 +96,11 @@ export default function UserMenu({ onAction }) {
             className="fixed right-4 top-[76px] z-[60] w-[min(320px,calc(100vw-2rem))] origin-top-right overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-2xl shadow-black/20 backdrop-blur-xl lg:absolute lg:right-0 lg:top-full lg:mt-3"
           >
             <div className="flex items-center gap-4 border-b border-[var(--border)] p-4">
-              <UserAvatar user={user} className="h-12 w-12" />
+              <UserAvatar user={user} dbUser={dbUser} className="h-12 w-12" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{displayName}</p>
                 <p className="truncate text-xs text-[var(--text-secondary)]">{email}</p>
-                <p className="mt-1 text-xs font-medium text-[var(--accent)]">Customer</p>
+                <p className="mt-1 text-xs font-medium text-[var(--accent)]">{role}</p>
               </div>
             </div>
 

@@ -10,17 +10,30 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { auth } from '../firebase.config';
+import { getUserByEmail, saveUser } from '../services/usersApi';
 
 const AuthContext = createContext(null);
 const googleProvider = new GoogleAuthProvider();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [dbUser, setDbUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = firebaseOnAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = firebaseOnAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      setDbUser(null);
+
+      if (currentUser?.email) {
+        try {
+          const response = await getUserByEmail(currentUser.email);
+          setDbUser(response.data.user);
+        } catch (error) {
+          console.warn('Failed to load user from database:', error.message);
+        }
+      }
+
       setLoading(false);
     });
 
@@ -39,11 +52,22 @@ export function AuthProvider({ children }) {
 
   const updateUserProfile = useCallback((profile) => updateProfile(auth.currentUser, profile), []);
 
+  const saveAuthenticatedUser = useCallback(async (firebaseUser) => {
+    try {
+      await saveUser(firebaseUser);
+      const response = await getUserByEmail(firebaseUser.email);
+      setDbUser(response.data.user);
+    } catch (error) {
+      console.warn('Failed to save user to database:', error.message);
+    }
+  }, []);
+
   const onAuthStateChanged = useCallback((callback) => firebaseOnAuthStateChanged(auth, callback), []);
 
   const value = useMemo(
     () => ({
       user,
+      dbUser,
       loading,
       login,
       register,
@@ -51,9 +75,22 @@ export function AuthProvider({ children }) {
       googleSignIn,
       resetPassword,
       updateUserProfile,
+      saveAuthenticatedUser,
       onAuthStateChanged
     }),
-    [user, loading, login, register, logout, googleSignIn, resetPassword, updateUserProfile, onAuthStateChanged]
+    [
+      user,
+      dbUser,
+      loading,
+      login,
+      register,
+      logout,
+      googleSignIn,
+      resetPassword,
+      updateUserProfile,
+      saveAuthenticatedUser,
+      onAuthStateChanged
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

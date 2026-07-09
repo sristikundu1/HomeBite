@@ -23,7 +23,7 @@ const socialProviders = [
 
 export default function SocialLogin() {
   const [loadingProvider, setLoadingProvider] = useState(null);
-  const { googleSignIn } = useAuth();
+  const { googleSignIn, saveAuthenticatedUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
@@ -38,7 +38,8 @@ export default function SocialLogin() {
     setLoadingProvider(provider);
 
     try {
-      await googleSignIn();
+      const userCredential = await googleSignIn();
+      await saveAuthenticatedUser(userCredential.user);
       toast.success('Signed in with Google.');
       navigate(redirectPath, { replace: true });
     } catch (error) {

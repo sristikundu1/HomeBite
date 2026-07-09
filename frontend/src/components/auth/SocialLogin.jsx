@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { GitBranch, Globe2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { GitBranch, Globe2, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../providers/AuthProvider';
+import { getFirebaseErrorMessage } from '../../utils/firebaseErrorMessage';
 
 const socialProviders = [
   {
@@ -18,8 +22,30 @@ const socialProviders = [
 ];
 
 export default function SocialLogin() {
-  const handleProviderClick = (provider) => {
-    toast(`Continue with ${provider} is not implemented yet.`);
+  const [loadingProvider, setLoadingProvider] = useState(null);
+  const { googleSignIn } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
+  const redirectPath = from ? `${from.pathname}${from.search || ''}${from.hash || ''}` : '/';
+
+  const handleProviderClick = async (provider) => {
+    if (provider !== 'Google') {
+      toast(`${provider} login is not available.`);
+      return;
+    }
+
+    setLoadingProvider(provider);
+
+    try {
+      await googleSignIn();
+      toast.success('Signed in with Google.');
+      navigate(redirectPath, { replace: true });
+    } catch (error) {
+      toast.error(getFirebaseErrorMessage(error));
+    } finally {
+      setLoadingProvider(null);
+    }
   };
 
   return (
@@ -39,12 +65,13 @@ export default function SocialLogin() {
             whileHover={{ y: -2, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleProviderClick(provider.label)}
-            className={`${provider.style} inline-flex h-14 w-full items-center justify-center gap-3 rounded-xl px-4 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:shadow-lg`}
+            disabled={loadingProvider === provider.label}
+            className={`${provider.style} inline-flex h-14 w-full items-center justify-center gap-3 rounded-xl px-4 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60`}
           >
             <motion.span whileHover={{ scale: 1.08, rotate: -3 }} className="inline-flex">
-              <Icon className="h-6 w-6" />
+              {loadingProvider === provider.label ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Icon className="h-6 w-6" />}
             </motion.span>
-            Continue with {provider.label}
+            {loadingProvider === provider.label ? 'Loading...' : `Continue with ${provider.label}`}
           </motion.button>
         );
       })}

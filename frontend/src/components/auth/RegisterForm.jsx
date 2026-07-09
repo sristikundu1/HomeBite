@@ -1,12 +1,17 @@
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { User, Mail } from 'lucide-react';
+import { Image, Loader2, User, Mail } from 'lucide-react';
+import { useAuth } from '../../providers/AuthProvider';
+import { getFirebaseErrorMessage } from '../../utils/firebaseErrorMessage';
 import { registerSchema } from '../../validation/registerSchema';
 import PasswordInput from './PasswordInput';
 
 export default function RegisterForm() {
+  const { register: createAccount, updateUserProfile } = useAuth();
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -16,14 +21,25 @@ export default function RegisterForm() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
+      photoURL: '',
       email: '',
       password: '',
       confirmPassword: ''
     }
   });
 
-  const onSubmit = () => {
-    toast.success('Registration form is ready for integration.');
+  const onSubmit = async (data) => {
+    try {
+      await createAccount(data.email, data.password);
+      await updateUserProfile({
+        displayName: data.name,
+        photoURL: data.photoURL || null
+      });
+      toast.success('Account created successfully.');
+      navigate('/', { replace: true });
+    } catch (error) {
+      toast.error(getFirebaseErrorMessage(error));
+    }
   };
 
   const password = watch('password');
@@ -61,6 +77,28 @@ export default function RegisterForm() {
         {errors.name?.message && (
           <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-[var(--accent)]">
             {errors.name.message}
+          </motion.p>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <label htmlFor="register-photo-url" className="block text-sm font-medium text-[var(--text-secondary)]">
+          Photo URL
+        </label>
+        <div className="relative">
+          <Image className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
+          <input
+            id="register-photo-url"
+            type="url"
+            placeholder="https://example.com/photo.jpg"
+            autoComplete="photo"
+            {...register('photoURL')}
+            className="w-full rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] py-4 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition duration-300 placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-[var(--accent-soft)] focus:shadow-[0_0_0_4px_var(--accent-soft)]"
+          />
+        </div>
+        {errors.photoURL?.message && (
+          <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-[var(--accent)]">
+            {errors.photoURL.message}
           </motion.p>
         )}
       </div>
@@ -117,7 +155,10 @@ export default function RegisterForm() {
         disabled={isSubmitting}
         className="w-full rounded-3xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition duration-300 hover:-translate-y-0.5 hover:scale-[1.01] hover:brightness-110 hover:shadow-orange-500/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Create account
+        <span className="inline-flex items-center justify-center gap-2">
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isSubmitting ? 'Creating account...' : 'Create account'}
+        </span>
       </button>
     </motion.form>
   );

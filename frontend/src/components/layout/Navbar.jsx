@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Menu, Moon, Sun, X } from 'lucide-react';
+import { useAuth } from '../../providers/AuthProvider';
 import { useTheme } from '../../providers/ThemeProvider';
+import UserMenu from '../navbar/UserMenu';
 
 const navLinks = [
   { href: '/explore', label: 'Explore Meals' },
@@ -17,7 +19,9 @@ function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, loading } = useAuth();
   const isDark = theme === 'dark';
+  const isAuthenticated = !loading && user;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 16);
@@ -77,14 +81,20 @@ function Navbar() {
           >
             {isDark ? <Moon size={18} /> : <Sun size={18} />}
           </button>
-          <Link to="/login" className="hidden rounded-full border
-           border-[var(--border)] px-5 py-3 text-sm font-semibold
-            text-[var(--text-primary)] transition duration-300 hover:bg-[var(--bg-muted)] lg:inline-flex">
-            Login
-          </Link>
-          <Link to="/register" className="hidden rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/20 transition duration-300 hover:brightness-110 hover:scale-[1.02] lg:inline-flex">
-            Sign Up
-          </Link>
+          {isAuthenticated ? (
+            <UserMenu />
+          ) : (
+            <>
+              <Link to="/login" className="hidden rounded-full border
+               border-[var(--border)] px-5 py-3 text-sm font-semibold
+                text-[var(--text-primary)] transition duration-300 hover:bg-[var(--bg-muted)] lg:inline-flex">
+                Login
+              </Link>
+              <Link to="/register" className="hidden rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/20 transition duration-300 hover:brightness-110 hover:scale-[1.02] lg:inline-flex">
+                Sign Up
+              </Link>
+            </>
+          )}
           <button
            type="button"
            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--icon)] shadow-sm transition hover:border-[var(--accent)] lg:hidden"
@@ -123,20 +133,24 @@ function Navbar() {
                     {link.label}
                   </a>
                 ))}
-                <Link
-                  to="/login"
-                  className="rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-4 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-muted)]"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-3xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-4 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/20 transition hover:brightness-110"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Sign Up
-                </Link>
+                {!isAuthenticated && (
+                  <>
+                    <Link
+                      to="/login"
+                      className="rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-4 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-muted)]"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="rounded-3xl bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-4 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/20 transition hover:brightness-110"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.div>
           </motion.div>

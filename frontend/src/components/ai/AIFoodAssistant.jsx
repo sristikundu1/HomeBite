@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChefHat, Loader2, Send, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { askFoodAssistant } from '../../services/aiAssistantApi';
 import MarkdownMessage from './MarkdownMessage';
@@ -55,11 +56,11 @@ export default function AIFoodAssistant() {
     sendMessage();
   }
 
-  return (
-    <div className="fixed bottom-24 right-4 z-[70] sm:bottom-28 sm:right-8">
+  return createPortal(
+    <>
       <AnimatePresence>
         {open && (
-          <motion.section initial={{ opacity: 0, y: 22, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }} transition={{ duration: 0.24 }} className="absolute bottom-[4.75rem] right-0 flex h-[min(650px,calc(100vh-8rem))] w-[min(390px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-elevated)]" role="dialog" aria-label="AI Food Assistant">
+          <motion.section initial={{ opacity: 0, y: 22, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }} transition={{ duration: 0.24 }} className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[90] flex h-[min(650px,calc(100dvh-7rem-env(safe-area-inset-bottom)))] w-[calc(100vw-2rem)] max-w-[390px] origin-bottom-right flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-elevated)] sm:bottom-[7rem] sm:right-8 sm:h-[min(650px,calc(100dvh-8.5rem))]" role="dialog" aria-label="AI Food Assistant">
             <header className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-rose-500 px-5 py-4 text-white">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><ChefHat className="h-5 w-5" /></span>
               <div className="min-w-0 flex-1"><h2 className="text-base font-semibold text-white">AI Food Assistant</h2><p className="text-xs text-white/80">Recommendations and HomeBite help</p></div>
@@ -85,8 +86,9 @@ export default function AIFoodAssistant() {
         )}
       </AnimatePresence>
 
-      <motion.button type="button" onClick={() => setOpen((current) => !current)} whileHover={{ scale: 1.06, y: -2 }} whileTap={{ scale: 0.94 }} className="relative flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-[0_20px_55px_rgba(249,115,22,0.38)] focus:outline-none focus:ring-4 focus:ring-orange-500/25 sm:h-16 sm:w-16" aria-label={open ? 'Close AI Food Assistant' : 'Open AI Food Assistant'} aria-expanded={open}><AnimatePresence mode="wait">{open ? <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}><X className="h-6 w-6" /></motion.span> : <motion.span key="bot" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} className="relative"><Bot className="h-7 w-7" /><Sparkles className="absolute -right-2 -top-2 h-3.5 w-3.5" /></motion.span>}</AnimatePresence></motion.button>
-    </div>
+      <motion.button type="button" onClick={() => setOpen((current) => !current)} whileHover={{ scale: 1.06, y: -2 }} whileTap={{ scale: 0.94 }} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-[91] flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-[0_20px_55px_rgba(249,115,22,0.38)] focus:outline-none focus:ring-4 focus:ring-orange-500/25 sm:bottom-8 sm:right-8 sm:h-16 sm:w-16" aria-label={open ? 'Close AI Food Assistant' : 'Open AI Food Assistant'} aria-expanded={open}><AnimatePresence mode="wait">{open ? <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}><X className="h-6 w-6" /></motion.span> : <motion.span key="bot" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} className="relative"><Bot className="h-7 w-7" /><Sparkles className="absolute -right-2 -top-2 h-3.5 w-3.5" /></motion.span>}</AnimatePresence></motion.button>
+    </>,
+    document.body
   );
 }
 

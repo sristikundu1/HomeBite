@@ -62,7 +62,7 @@ export async function chatWithAssistant(req, res) {
       { projection: { title: 1, chefName: 1, category: 1, cuisine: 1, price: 1, discountPrice: 1, ingredients: 1, calories: 1, spiceLevel: 1, preparationTime: 1, isAvailable: 1, availableQuantity: 1, rating: 1 } }
     ).sort({ rating: -1, orderCount: -1 }).limit(80).toArray();
 
-    const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       signal: AbortSignal.timeout(30000),
@@ -70,7 +70,11 @@ export async function chatWithAssistant(req, res) {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction(foods.map(foodSummary), req.body.currentPath) }] },
         contents: [...cleanHistory(req.body.history), { role: 'user', parts: [{ text: message }] }],
-        generationConfig: { temperature: 0.45, maxOutputTokens: 700 }
+        generationConfig: {
+          temperature: 0.45,
+          maxOutputTokens: 700,
+          thinkingConfig: { thinkingBudget: 0 }
+        }
       })
     });
 

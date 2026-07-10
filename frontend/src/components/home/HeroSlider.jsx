@@ -7,6 +7,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { ChevronLeft, ChevronRight, Package, Star, Truck, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const slides = [
   {
@@ -37,8 +38,12 @@ const slides = [
 ];
 
 function HeroSlider() {
+  const navigate = useNavigate();
   const swiperRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [location, setLocation] = useState('');
+  const [mealName, setMealName] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     setCurrentSlide(0);
@@ -50,6 +55,21 @@ function HeroSlider() {
 
   const prevSlide = () => {
     swiperRef.current?.slidePrev();
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    if (isSearching) return;
+
+    setIsSearching(true);
+    const params = new URLSearchParams();
+    const trimmedMeal = mealName.trim();
+    const trimmedLocation = location.trim();
+
+    if (trimmedMeal) params.set('search', trimmedMeal);
+    if (trimmedLocation) params.set('location', trimmedLocation);
+
+    navigate(params.size ? `/foods?${params.toString()}` : '/foods');
   };
 
   return (
@@ -117,29 +137,35 @@ function HeroSlider() {
             </motion.button>
           </div>
 
-          <div className="mx-auto w-full max-w-[850px] rounded-full border border-[var(--border)] bg-[var(--bg-panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-2xl md:p-4 md:h-[75px]">
+          <form onSubmit={handleSearch} className="mx-auto w-full max-w-[850px] rounded-full border border-[var(--border)] bg-[var(--bg-panel)] p-3 shadow-[var(--shadow-soft)] backdrop-blur-2xl md:p-4 md:h-[75px]" aria-label="Search meals">
             <div className="flex h-full flex-col gap-3 rounded-full bg-[var(--bg-panel)]/95 p-2 md:flex-row md:items-center md:gap-3">
               <div className="flex-1 rounded-full border border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-left text-sm text-[var(--text-primary)] shadow-inner shadow-black/10 md:px-5 md:py-4">
-                <label className="mb-1 block text-[10px] uppercase tracking-[0.35em] text-[var(--text-secondary)]">Location</label>
+                <label htmlFor="hero-location" className="mb-1 block text-[10px] uppercase tracking-[0.35em] text-[var(--text-secondary)]">Location</label>
                 <input
+                  id="hero-location"
                   type="text"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
                   placeholder="City or neighborhood"
                   className="w-full bg-transparent text-sm text-[var(--text-primary)] placeholder-theme focus:outline-none"
                 />
               </div>
               <div className="flex-1 rounded-full border border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-left text-sm text-[var(--text-primary)] shadow-inner shadow-black/10 md:px-5 md:py-4">
-                <label className="mb-1 block text-[10px] uppercase tracking-[0.35em] text-[var(--text-secondary)]">Search meals</label>
+                <label htmlFor="hero-meal-name" className="mb-1 block text-[10px] uppercase tracking-[0.35em] text-[var(--text-secondary)]">Search meals</label>
                 <input
+                  id="hero-meal-name"
                   type="text"
+                  value={mealName}
+                  onChange={(event) => setMealName(event.target.value)}
                   placeholder="Search breakfast, curry, desserts..."
                   className="w-full bg-transparent text-sm text-[var(--text-primary)] placeholder-theme focus:outline-none"
                 />
               </div>
-              <button className="w-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-[var(--button-text)] transition duration-300 hover:scale-[1.02] md:w-auto md:px-8 md:py-4">
+              <button type="submit" disabled={isSearching} className="w-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-[var(--button-text)] transition duration-300 hover:scale-[1.02] disabled:cursor-wait disabled:opacity-70 md:w-auto md:px-8 md:py-4">
                 Search
               </button>
             </div>
-          </div>
+          </form>
         </motion.div>
       </div>
 

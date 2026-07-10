@@ -55,6 +55,8 @@ import AdminFoods from './pages/dashboard/AdminFoods';
 import AdminOrders from './pages/dashboard/AdminOrders';
 import AdminMessages from './pages/dashboard/AdminMessages';
 import AdminNotifications from './pages/dashboard/AdminNotifications';
+import AdminCoupons from './pages/dashboard/AdminCoupons';
+import AdminGiftCards from './pages/dashboard/AdminGiftCards';
 
 function App() {
   return (
@@ -155,6 +157,22 @@ function App() {
             element={
               <AdminRoute>
                 <AdminNotifications />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/coupons"
+            element={
+              <AdminRoute>
+                <AdminCoupons />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/gift-cards"
+            element={
+              <AdminRoute>
+                <AdminGiftCards />
               </AdminRoute>
             }
           />

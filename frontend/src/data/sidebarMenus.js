@@ -63,8 +63,8 @@ export const sidebarMenus = {
     { label: 'Messages', path: '/dashboard/admin/messages', icon: MessageCircle },
     { label: 'Notifications', path: '/dashboard/admin/notifications', icon: Bell },
     { label: 'Reports', path: placeholderPath, icon: LineChart },
-    { label: 'Coupons', path: placeholderPath, icon: TicketPercent },
-    { label: 'Gift Cards', path: placeholderPath, icon: Gift },
+    { label: 'Coupons', path: '/dashboard/admin/coupons', icon: TicketPercent },
+    { label: 'Gift Cards', path: '/dashboard/admin/gift-cards', icon: Gift },
     { label: 'Profile', path: '/dashboard/admin/profile', icon: User },
     { label: 'Platform Settings', path: '/dashboard/admin/platform-settings', icon: Settings },
     { label: 'Settings', path: '/dashboard/settings', icon: Settings }

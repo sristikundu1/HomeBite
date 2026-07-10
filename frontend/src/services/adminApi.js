@@ -29,3 +29,14 @@ export function activateManagedUser(id) {
 export function softDeleteManagedUser(id) {
   return api.delete(`/admin/users/${id}`);
 }
+
+export const getCoupons = () => api.get('/admin/coupons');
+export const createCoupon = (coupon) => api.post('/admin/coupons', coupon);
+export const updateCoupon = (id, coupon) => api.put(`/admin/coupons/${id}`, coupon);
+export const updateCouponStatus = (id, status) => api.patch(`/admin/coupons/${id}/status`, { status });
+export const deleteCoupon = (id) => api.delete(`/admin/coupons/${id}`);
+
+export const getGiftCards = () => api.get('/admin/gift-cards');
+export const createGiftCard = (giftCard) => api.post('/admin/gift-cards', giftCard);
+export const deactivateGiftCard = (id) => api.patch(`/admin/gift-cards/${id}/deactivate`);
+export const deleteGiftCard = (id) => api.delete(`/admin/gift-cards/${id}`);

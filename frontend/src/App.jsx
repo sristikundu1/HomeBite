@@ -54,6 +54,7 @@ import AdminUsers from './pages/dashboard/AdminUsers';
 import AdminFoods from './pages/dashboard/AdminFoods';
 import AdminOrders from './pages/dashboard/AdminOrders';
 import AdminMessages from './pages/dashboard/AdminMessages';
+import AdminNotifications from './pages/dashboard/AdminNotifications';
 
 function App() {
   return (
@@ -146,6 +147,14 @@ function App() {
             element={
               <AdminRoute>
                 <AdminMessages />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/notifications"
+            element={
+              <AdminRoute>
+                <AdminNotifications />
               </AdminRoute>
             }
           />

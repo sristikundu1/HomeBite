@@ -61,7 +61,7 @@ export const sidebarMenus = {
     { label: 'Manage Foods', path: '/dashboard/admin/foods', icon: Utensils },
     { label: 'Manage Orders', path: '/dashboard/admin/orders', icon: ReceiptText },
     { label: 'Messages', path: '/dashboard/admin/messages', icon: MessageCircle },
-    { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
+    { label: 'Notifications', path: '/dashboard/admin/notifications', icon: Bell },
     { label: 'Reports', path: placeholderPath, icon: LineChart },
     { label: 'Coupons', path: placeholderPath, icon: TicketPercent },
     { label: 'Gift Cards', path: placeholderPath, icon: Gift },

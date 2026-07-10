@@ -27,8 +27,8 @@ function notificationCategory(notification) {
   return 'system';
 }
 
-function notificationIcon(notification) {
-  return { orders: Package, messages: MessageCircle, reviews: Star, system: ShieldCheck }[notificationCategory(notification)] || Bell;
+function notificationIcon(notification, categoryResolver = notificationCategory) {
+  return { orders: Package, messages: MessageCircle, reviews: Star, system: ShieldCheck }[categoryResolver(notification)] || Bell;
 }
 
 function formatDate(value) {
@@ -36,7 +36,12 @@ function formatDate(value) {
   return new Intl.DateTimeFormat('en-BD', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-export default function Notifications() {
+export default function Notifications({
+  title = 'Notifications',
+  description = 'Review your latest order, message, review, and platform updates.',
+  filterOptions = filters,
+  categoryResolver = notificationCategory
+}) {
   const { notifications, unreadCount, loading, markAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -44,8 +49,8 @@ export default function Notifications() {
   const [deletingId, setDeletingId] = useState('');
 
   const filtered = useMemo(
-    () => filter === 'all' ? notifications : notifications.filter((item) => notificationCategory(item) === filter),
-    [filter, notifications]
+    () => filter === 'all' ? notifications : notifications.filter((item) => categoryResolver(item) === filter),
+    [categoryResolver, filter, notifications]
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -72,7 +77,7 @@ export default function Notifications() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-8">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <DashboardHeader title="Notifications" description="Review your latest order, message, review, and platform updates." />
+        <DashboardHeader title={title} description={description} />
         <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} className="flex w-fit items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 shadow-sm" aria-label={`${unreadCount} unread notifications`}>
           <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
             <Bell className="h-5 w-5" aria-hidden="true" />
@@ -85,7 +90,7 @@ export default function Notifications() {
       <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)]">
         <div className="flex flex-col gap-4 border-b border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Notification filters">
-            {filters.map(({ key, label, icon: Icon }) => (
+            {filterOptions.map(({ key, label, icon: Icon }) => (
               <button key={key} type="button" role="tab" aria-selected={filter === key} onClick={() => setFilter(key)} className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${filter === key ? 'bg-[var(--accent)] text-white shadow-lg shadow-orange-500/15' : 'bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--accent)]'}`}>
                 <Icon className="h-4 w-4" aria-hidden="true" />{label}
               </button>
@@ -99,7 +104,7 @@ export default function Notifications() {
         {loading ? <NotificationSkeleton /> : visible.length ? (
           <motion.div layout className="divide-y divide-[var(--border)]">
             <AnimatePresence mode="popLayout">
-              {visible.map((notification, index) => <NotificationItem key={documentId(notification._id)} notification={notification} index={index} onRead={markAsRead} onDelete={remove} deleting={deletingId === documentId(notification._id)} />)}
+              {visible.map((notification, index) => <NotificationItem key={documentId(notification._id)} notification={notification} index={index} onRead={markAsRead} onDelete={remove} deleting={deletingId === documentId(notification._id)} categoryResolver={categoryResolver} />)}
             </AnimatePresence>
           </motion.div>
         ) : <EmptyNotifications filtered={filter !== 'all'} />}
@@ -118,8 +123,8 @@ export default function Notifications() {
   );
 }
 
-function NotificationItem({ notification, index, onRead, onDelete, deleting }) {
-  const Icon = notificationIcon(notification);
+function NotificationItem({ notification, index, onRead, onDelete, deleting, categoryResolver }) {
+  const Icon = notificationIcon(notification, categoryResolver);
   return (
     <motion.article layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ delay: index * 0.035 }} className={`group flex items-start gap-3 p-4 transition sm:gap-4 sm:p-5 ${notification.isRead ? 'bg-[var(--bg-surface)]' : 'bg-[var(--accent-soft)]'}`}>
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--accent)]"><Icon className="h-5 w-5" aria-hidden="true" /></span>

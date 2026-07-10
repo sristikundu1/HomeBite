@@ -20,6 +20,7 @@ import { getFood, getFoods } from '../services/foodsApi';
 import useWishlist from '../hooks/useWishlist';
 import useCart from '../hooks/useCart';
 import { useAuth } from '../providers/AuthProvider';
+import ReviewList from '../components/reviews/ReviewList';
 
 function foodId(food) {
   return food?._id?.$oid || food?._id;
@@ -171,6 +172,7 @@ export default function FoodDetails() {
               </ul>
             </ContentCard>
             {!!food.tags?.length && <ContentCard title="Tags"><div className="flex flex-wrap gap-2">{food.tags.map((tag) => <span key={tag} className="rounded-full border border-[var(--border)] bg-[var(--bg-muted)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)]">#{tag}</span>)}</div></ContentCard>}
+            <ContentCard title="Customer Reviews"><ReviewList foodId={foodId(food)} /></ContentCard>
           </div>
           <ChefCard food={food} />
         </div>

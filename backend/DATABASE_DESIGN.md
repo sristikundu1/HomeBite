@@ -65,7 +65,7 @@ Stores paid customer orders. An order is created only after its Stripe PaymentIn
   tax: Number,
   deliveryFee: Number,
   total: Number,
-  status: String, // default: 'pending'
+  status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'out-for-delivery' | 'delivered',
   orderDate: Date,
   paymentStatus: 'paid'
 }
@@ -81,9 +81,61 @@ Stores paid customer orders. An order is created only after its Stripe PaymentIn
 - `tax`: Tax charged for the order.
 - `deliveryFee`: Delivery fee charged for the order.
 - `total`: Amount verified from the successful Stripe PaymentIntent.
-- `status`: Fulfilment state. Defaults to `pending`.
+- `status`: Fulfilment state used by the live progress timeline. Defaults to `pending`.
 - `orderDate`: Date and time the order was created.
 - `paymentStatus`: Payment state. Always `paid` at creation because unpaid intents cannot create orders.
+
+## reviews
+
+Stores one customer review per delivered order.
+
+```js
+{
+  _id: ObjectId,
+  orderId: ObjectId,
+  customer: Object,
+  foodIds: ObjectId[],
+  chefIds: ObjectId[],
+  rating: Number,
+  comment: String,
+  photos: String[],
+  date: Date
+}
+```
+
+- `orderId`: Delivered order being reviewed. A unique index enforces one review per order.
+- `customer`: Customer snapshot copied from the order.
+- `foodIds`: Foods whose rating aggregates include this review.
+- `chefIds`: Chefs whose rating aggregates include this review.
+- `rating`: Integer from 1 through 5.
+- `comment`: Customer's written review.
+- `photos`: Optional review-photo URLs; currently an empty placeholder array in the UI.
+- `date`: Server-generated review submission date.
+
+After review creation, `rating` and `reviewCount` are recalculated on every related food and chef user document.
+
+## notifications
+
+Stores targeted in-app notifications for one recipient.
+
+```js
+{
+  _id: ObjectId,
+  receiverEmail: String,
+  type: String,
+  title: String,
+  message: String,
+  isRead: Boolean,
+  createdAt: Date
+}
+```
+
+- `receiverEmail`: Normalized email of the only user who should receive the notification.
+- `type`: Notification category, such as `order` or `chef-application`.
+- `title`: Short notification heading.
+- `message`: Notification detail text.
+- `isRead`: Read state. Defaults to `false`.
+- `createdAt`: Server-generated creation date used for newest-first ordering.
 
 ## chefApplications
 

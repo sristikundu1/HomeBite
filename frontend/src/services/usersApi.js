@@ -20,3 +20,7 @@ export function getUserByEmail(email) {
 export function getUserRoleByEmail(email) {
   return api.get(`/users/role/${encodeURIComponent(email)}`);
 }
+
+export function updateChefAvailability(email, availability) {
+  return api.patch(`/users/${encodeURIComponent(email)}/availability`, availability);
+}

@@ -2,7 +2,10 @@ import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 import { getStripe } from '../utils/stripe.js';
+import { getSocketServer, orderRoom } from '../config/socket.js';
+import { notifyRecipients } from '../services/notifications.service.js';
 
+const ORDER_STATUSES = ['pending', 'accepted', 'rejected', 'preparing', 'ready', 'out-for-delivery', 'delivered'];
 let orderIndexPromise;
 
 function ordersCollection() {
@@ -151,6 +154,15 @@ export async function createOrder(req, res) {
     };
 
     const result = await ordersCollection().insertOne(order);
+    const chefs = Array.isArray(order.chef) ? order.chef : [order.chef].filter(Boolean);
+    await notifyRecipients(
+      chefs.map((chef) => chef.email),
+      {
+        type: 'order',
+        title: 'New Order Received',
+        message: `${order.customer.name || 'A customer'} placed a new order.`
+      }
+    );
     return sendSuccess(res, 201, 'Order created successfully', { ...order, _id: result.insertedId });
   } catch (error) {
     return handleError(res, error, 'Create order');
@@ -190,20 +202,63 @@ export async function getOrders(req, res) {
   }
 }
 
+export async function getOrderById(req, res) {
+  try {
+    const _id = documentId(req.params.id);
+    if (!_id) return sendError(res, 400, 'Invalid order id');
+
+    const order = await ordersCollection().findOne({ _id });
+    if (!order) return sendError(res, 404, 'Order not found');
+
+    return sendSuccess(res, 200, 'Order retrieved successfully', order);
+  } catch (error) {
+    return handleError(res, error, 'Get order');
+  }
+}
+
 export async function updateOrderStatus(req, res) {
   try {
     const _id = documentId(req.params.id);
     if (!_id) return sendError(res, 400, 'Invalid order id');
 
-    const status = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : '';
-    if (!status) {
-      return sendError(res, 400, 'status is required');
+    const status = typeof req.body.status === 'string'
+      ? req.body.status.trim().toLowerCase().replace(/[\s_]+/g, '-')
+      : '';
+    if (!ORDER_STATUSES.includes(status)) {
+      return sendError(res, 400, `status must be one of: ${ORDER_STATUSES.join(', ')}`);
     }
 
-    const result = await ordersCollection().updateOne({ _id }, { $set: { status } });
+    const statusUpdatedAt = new Date();
+    const result = await ordersCollection().updateOne({ _id }, { $set: { status, statusUpdatedAt } });
     if (!result.matchedCount) return sendError(res, 404, 'Order not found');
 
-    return sendSuccess(res, 200, 'Order status updated successfully', await ordersCollection().findOne({ _id }));
+    const order = await ordersCollection().findOne({ _id });
+    getSocketServer()?.to(orderRoom(_id.toString())).emit('order-status-updated', {
+      orderId: _id.toString(),
+      status,
+      statusUpdatedAt
+    });
+
+    const statusTitles = {
+      accepted: 'Order Accepted',
+      rejected: 'Order Rejected',
+      preparing: 'Order Is Being Prepared',
+      ready: 'Order Is Ready',
+      'out-for-delivery': 'Order Is Out For Delivery',
+      delivered: 'Order Delivered'
+    };
+    const chefs = Array.isArray(order.chef) ? order.chef : [order.chef].filter(Boolean);
+    const chefNames = chefs.map((chef) => chef.name).filter(Boolean).join(', ');
+    await notifyRecipients(
+      [order.customer?.email],
+      {
+        type: 'order',
+        title: statusTitles[status] || 'Order Status Updated',
+        message: `${chefNames || 'Your chef'} updated your order to ${status.replaceAll('-', ' ')}.`
+      }
+    );
+
+    return sendSuccess(res, 200, 'Order status updated successfully', order);
   } catch (error) {
     return handleError(res, error, 'Update order status');
   }

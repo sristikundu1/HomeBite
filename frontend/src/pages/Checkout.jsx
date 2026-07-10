@@ -135,7 +135,7 @@ function CheckoutContent() {
       if (paymentError) throw new Error(paymentError.message);
       if (paymentIntent?.status !== 'succeeded') throw new Error('Payment was not completed.');
 
-      await createOrder({
+      const orderResponse = await createOrder({
         userEmail: dbUser?.email || user?.email,
         items: cartItems,
         shipping: values,
@@ -145,7 +145,8 @@ function CheckoutContent() {
       await clearCart();
       window.localStorage.removeItem(SHIPPING_STORAGE_KEY);
       toast.success('Payment successful. Order created.');
-      navigate('/dashboard/orders', { replace: true });
+      const orderId = orderResponse.data.data?._id?.$oid || orderResponse.data.data?._id;
+      navigate(`/dashboard/orders/${orderId}`, { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || 'Payment failed. Please try again.');
     }

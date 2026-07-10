@@ -6,6 +6,10 @@ import foodsRoutes from './routes/foods.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import paymentsRoutes from './routes/payments.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
+import reviewsRoutes from './routes/reviews.routes.js';
+import notificationsRoutes from './routes/notifications.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import aiAssistantRoutes from './routes/aiAssistant.routes.js';
 
 const app = express();
 
@@ -18,6 +22,10 @@ app.use('/foods', foodsRoutes);
 app.use('/cart', cartRoutes);
 app.use('/', paymentsRoutes);
 app.use('/orders', ordersRoutes);
+app.use('/reviews', reviewsRoutes);
+app.use('/notifications', notificationsRoutes);
+app.use('/chat', chatRoutes);
+app.use('/ai-assistant', aiAssistantRoutes);
 
 app.get('/', (req, res) => {
   res.json({

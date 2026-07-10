@@ -150,7 +150,7 @@ function OrderSummary({ cartCount, subtotal, deliveryFee, estimatedTax, grandTot
       </dl>
       <div className="flex items-end justify-between gap-4 py-6"><span className="font-semibold text-[var(--text-primary)]">Grand Total</span><span className="text-2xl font-bold text-[var(--text-primary)]">{formatPrice(grandTotal)}</span></div>
       <div className="grid gap-3">
-        <button type="button" className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5">Proceed To Checkout <ArrowRight className="h-4 w-4" /></button>
+        <Link to="/dashboard/checkout" type="button" className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5">Proceed To Checkout <ArrowRight className="h-4 w-4" /></Link>
         <Link to="/foods" className="inline-flex items-center justify-center rounded-full border border-[var(--border)] px-6 py-4 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">Continue Shopping</Link>
       </div>
     </motion.aside>

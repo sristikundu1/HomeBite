@@ -34,6 +34,15 @@ import FoodDetails from './pages/FoodDetails';
 import Wishlist from './pages/dashboard/Wishlist';
 import Cart from './pages/dashboard/Cart';
 import Checkout from './pages/Checkout';
+import CustomerOrderDetails from './pages/dashboard/CustomerOrderDetails';
+import Chat from './pages/dashboard/Chat';
+import AIFoodAssistant from './components/ai/AIFoodAssistant';
+import ChefOverview from './pages/dashboard/ChefOverview';
+import ChefOrders from './pages/dashboard/ChefOrders';
+import ChefAvailability from './pages/dashboard/ChefAvailability';
+import ChefRevenue from './pages/dashboard/ChefRevenue';
+import ChefReviews from './pages/dashboard/ChefReviews';
+import ChefMessages from './pages/dashboard/ChefMessages';
 
 function App() {
   return (
@@ -66,14 +75,6 @@ function App() {
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/foods" element={<Foods />} />
           <Route path="/foods/:id" element={<FoodDetails />} />
-          <Route
-            path="/checkout"
-            element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
         </Route>
         <Route
           path="/dashboard"
@@ -90,11 +91,62 @@ function App() {
           <Route path="settings" element={<DashboardSettings />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="cart" element={<Cart />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="orders/:id" element={<CustomerOrderDetails />} />
+          <Route path="messages" element={<Chat />} />
+          <Route
+            path="chef"
+            element={
+              <ChefRoute>
+                <ChefOverview />
+              </ChefRoute>
+            }
+          />
           <Route
             path="chef/add-food"
             element={
               <ChefRoute>
                 <ChefAddFood />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/orders"
+            element={
+              <ChefRoute>
+                <ChefOrders />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/availability"
+            element={
+              <ChefRoute>
+                <ChefAvailability />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/revenue"
+            element={
+              <ChefRoute>
+                <ChefRevenue />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/reviews"
+            element={
+              <ChefRoute>
+                <ChefReviews />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/messages"
+            element={
+              <ChefRoute>
+                <ChefMessages />
               </ChefRoute>
             }
           />
@@ -125,6 +177,7 @@ function App() {
           <Route path="*" element={<DashboardNotFound />} />
         </Route>
       </Routes>
+      <AIFoodAssistant />
     </BrowserRouter>
   );
 }

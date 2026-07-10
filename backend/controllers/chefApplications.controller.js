@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db.js';
+import { notifyRecipients } from '../services/notifications.service.js';
 
 function getChefApplicationsCollection() {
   return getDB().collection('chefApplications');
@@ -72,6 +73,16 @@ export async function createChefApplication(req, res) {
         $set: {
           chefStatus: 'pending'
         }
+      }
+    );
+
+    const admins = await getUsersCollection().find({ role: 'admin' }, { projection: { email: 1 } }).toArray();
+    await notifyRecipients(
+      admins.map((admin) => admin.email),
+      {
+        type: 'chef-application',
+        title: 'New Chef Application',
+        message: `${application.name || application.email} submitted a Become a Chef request.`
       }
     );
 
@@ -168,6 +179,15 @@ export async function approveChefApplication(req, res) {
       }
     );
 
+    await notifyRecipients(
+      [application.email],
+      {
+        type: 'chef-application',
+        title: 'Chef Application Approved',
+        message: 'Your Become a Chef request has been approved.'
+      }
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Chef application approved successfully'
@@ -214,6 +234,15 @@ export async function rejectChefApplication(req, res) {
           role: 'customer',
           chefStatus: 'rejected'
         }
+      }
+    );
+
+    await notifyRecipients(
+      [application.email],
+      {
+        type: 'chef-application',
+        title: 'Chef Application Update',
+        message: rejectionReason || 'Your Become a Chef request was not approved.'
       }
     );
 

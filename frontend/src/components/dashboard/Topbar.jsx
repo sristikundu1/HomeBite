@@ -1,14 +1,22 @@
-import { Bell, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
+import { Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 import UserAvatar from '../navbar/UserAvatar';
 import Breadcrumb from './Breadcrumb';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 const pageTitles = {
   '/dashboard': 'Overview',
   '/dashboard/profile': 'Profile',
-  '/dashboard/settings': 'Settings'
+  '/dashboard/settings': 'Settings',
+  '/dashboard/messages': 'Messages',
+  '/dashboard/chef': 'Chef Overview',
+  '/dashboard/chef/orders': 'Chef Orders',
+  '/dashboard/chef/availability': 'Availability',
+  '/dashboard/chef/revenue': 'Revenue',
+  '/dashboard/chef/reviews': 'Reviews',
+  '/dashboard/chef/messages': 'Chef Messages'
 };
 
 export default function Topbar({ sidebarCollapsed, onToggleSidebar, onOpenMobileSidebar }) {
@@ -45,13 +53,7 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar, onOpenMobile
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-[var(--icon)] transition hover:bg-[var(--bg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
-            aria-label="Notifications"
-          >
-            <Bell size={19} />
-          </button>
+          <NotificationDropdown buttonClassName="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-[var(--icon)] transition hover:bg-[var(--bg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]" />
           <button
             type="button"
             onClick={toggleTheme}

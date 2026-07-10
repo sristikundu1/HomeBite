@@ -3,6 +3,7 @@ import {
   createOrder,
   getChefOrders,
   getCustomerOrders,
+  getOrderById,
   getOrders,
   updateOrderStatus
 } from '../controllers/orders.controller.js';
@@ -13,6 +14,7 @@ router.post('/', createOrder);
 router.get('/customer/:email', getCustomerOrders);
 router.get('/chef/:email', getChefOrders);
 router.get('/', getOrders);
+router.get('/:id', getOrderById);
 router.patch('/:id/status', updateOrderStatus);
 
 export default router;

@@ -22,8 +22,13 @@ export function SocketProvider({ children }) {
       setConnected(false);
     }
 
+    function handleConnectError() {
+      setConnected(false);
+    }
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
 
     if (email) {
       if (socket.connected) handleConnect();
@@ -33,14 +38,19 @@ export function SocketProvider({ children }) {
       setConnected(false);
     }
 
+    const reconnectTimer = email ? window.setInterval(() => {
+      if (!socket.connected) socket.connect();
+    }, 3000) : null;
+
     return () => {
+      if (reconnectTimer) window.clearInterval(reconnectTimer);
       if (email && socket.connected) socket.emit('leave-user', email);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
     };
   }, [authLoading, email, socket]);
 
   const value = useMemo(() => ({ socket, connected }), [socket, connected]);
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
-

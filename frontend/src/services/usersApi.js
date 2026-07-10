@@ -24,3 +24,15 @@ export function getUserRoleByEmail(email) {
 export function updateChefAvailability(email, availability) {
   return api.patch(`/users/${encodeURIComponent(email)}/availability`, availability);
 }
+
+export function updateCustomerProfile(email, profile) {
+  return api.patch(`/users/${encodeURIComponent(email)}/profile`, profile);
+}
+
+export function updateCustomerNotificationPreferences(email, preferences) {
+  return api.patch(`/users/${encodeURIComponent(email)}/preferences`, preferences);
+}
+
+export function deactivateCustomerAccount(email) {
+  return api.patch(`/users/${encodeURIComponent(email)}/deactivate`);
+}

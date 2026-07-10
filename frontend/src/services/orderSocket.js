@@ -5,7 +5,13 @@ let socket;
 
 export function getSocket() {
   if (!socket) {
-    socket = io(socketUrl, { autoConnect: false });
+    socket = io(socketUrl, {
+      autoConnect: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    });
   }
 
   return socket;

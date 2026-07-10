@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db.js';
 import { getSocketServer, userRoom } from '../config/socket.js';
+import { notifyRecipients } from '../services/notifications.service.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
@@ -136,6 +137,12 @@ export async function sendMessage(req, res) {
     const payload = { message, conversationId: _id, conversation: { ...conversation, lastMessage: text, lastMessageAt: message.createdAt } };
     const io = getSocketServer();
     io?.to(userRoom(senderEmail)).to(userRoom(receiverEmail)).emit('chat:message', payload);
+    const sender = conversation.participants?.find((participant) => normalizeEmail(participant.email) === senderEmail);
+    await notifyRecipients([receiverEmail], {
+      type: 'message',
+      title: `New message from ${sender?.name || 'HomeBite user'}`,
+      message: text.length > 120 ? `${text.slice(0, 117)}...` : text
+    });
     return sendSuccess(res, 201, 'Message sent successfully', message);
   } catch (error) {
     return fail(res, error, 'Send message');

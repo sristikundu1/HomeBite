@@ -10,6 +10,8 @@ import reviewsRoutes from './routes/reviews.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import aiAssistantRoutes from './routes/aiAssistant.routes.js';
+import chefProfileRoutes from './routes/chefProfile.routes.js';
+import chefSettingsRoutes from './routes/chefSettings.routes.js';
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.use('/reviews', reviewsRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/chat', chatRoutes);
 app.use('/ai-assistant', aiAssistantRoutes);
+app.use('/chef/profile', chefProfileRoutes);
+app.use('/chef', chefSettingsRoutes);
 
 app.get('/', (req, res) => {
   res.json({

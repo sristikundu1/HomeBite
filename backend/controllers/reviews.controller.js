@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db.js';
+import { notifyRecipients } from '../services/notifications.service.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 
 let reviewIndexPromise;
@@ -123,6 +124,11 @@ export async function createReview(req, res) {
     insertedReviewId = result.insertedId;
     await updateRatingSummaries(foodIds, chefIds);
     await getDB().collection('orders').updateOne({ _id: orderId }, { $set: { reviewed: true } });
+    await notifyRecipients(chefs.map((chef) => chef?.email), {
+      type: 'review',
+      title: 'New customer review',
+      message: `${order.customer?.name || 'A customer'} left a ${rating}-star review.`
+    });
 
     return sendSuccess(res, 201, 'Review submitted successfully', { ...review, _id: result.insertedId });
   } catch (error) {
@@ -170,5 +176,68 @@ export async function getChefReviews(req, res) {
     return sendSuccess(res, 200, 'Chef reviews retrieved successfully', reviews);
   } catch (error) {
     return handleError(res, error, 'Get chef reviews');
+  }
+}
+
+export async function getCustomerReviews(req, res) {
+  try {
+    const email = normalizeEmail(req.params.email);
+    if (!email) return sendError(res, 400, 'Customer email is required');
+
+    const reviews = await reviewsCollection().find({ 'customer.email': email }).sort({ date: -1 }).toArray();
+    const orderIds = reviews.map((review) => review.orderId).filter(Boolean);
+    const orders = orderIds.length
+      ? await getDB().collection('orders').find({ _id: { $in: orderIds } }).toArray()
+      : [];
+    const ordersById = new Map(orders.map((order) => [order._id.toString(), order]));
+    const data = reviews.map((review) => {
+      const order = ordersById.get(review.orderId?.toString());
+      return { ...review, foods: order?.foods || [], chef: order?.chef || [] };
+    });
+
+    return sendSuccess(res, 200, 'Customer reviews retrieved successfully', data);
+  } catch (error) {
+    return handleError(res, error, 'Get customer reviews');
+  }
+}
+
+export async function updateReview(req, res) {
+  try {
+    const _id = objectId(req.params.id);
+    const userEmail = normalizeEmail(req.body.userEmail);
+    const rating = Number(req.body.rating);
+    const comment = typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
+    if (!_id || !userEmail || !Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) {
+      return sendError(res, 400, 'Valid review id, customer email, rating from 1 to 5, and a comment of at least 10 characters are required');
+    }
+
+    const review = await reviewsCollection().findOne({ _id, 'customer.email': userEmail });
+    if (!review) return sendError(res, 404, 'Review not found');
+
+    await reviewsCollection().updateOne({ _id }, { $set: { rating, comment, updatedAt: new Date() } });
+    await updateRatingSummaries(review.foodIds || [], review.chefIds || []);
+    return sendSuccess(res, 200, 'Review updated successfully', await reviewsCollection().findOne({ _id }));
+  } catch (error) {
+    return handleError(res, error, 'Update review');
+  }
+}
+
+export async function deleteReview(req, res) {
+  try {
+    const _id = objectId(req.params.id);
+    const userEmail = normalizeEmail(req.query.email);
+    if (!_id || !userEmail) return sendError(res, 400, 'Valid review id and customer email are required');
+
+    const review = await reviewsCollection().findOne({ _id, 'customer.email': userEmail });
+    if (!review) return sendError(res, 404, 'Review not found');
+
+    await reviewsCollection().deleteOne({ _id });
+    await Promise.all([
+      updateRatingSummaries(review.foodIds || [], review.chefIds || []),
+      getDB().collection('orders').updateOne({ _id: review.orderId }, { $set: { reviewed: false } })
+    ]);
+    return sendSuccess(res, 200, 'Review deleted successfully', { _id });
+  } catch (error) {
+    return handleError(res, error, 'Delete review');
   }
 }

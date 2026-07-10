@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged as firebaseOnAuthStateChanged,
@@ -7,6 +8,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  reauthenticateWithCredential,
+  updatePassword as firebaseUpdatePassword,
   updateProfile
 } from 'firebase/auth';
 import { auth } from '../firebase.config';
@@ -52,6 +55,14 @@ export function AuthProvider({ children }) {
 
   const updateUserProfile = useCallback((profile) => updateProfile(auth.currentUser, profile), []);
 
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser?.email) throw new Error('No authenticated user');
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    return firebaseUpdatePassword(currentUser, newPassword);
+  }, []);
+
   const saveAuthenticatedUser = useCallback(async (firebaseUser) => {
     try {
       await saveUser(firebaseUser);
@@ -61,6 +72,13 @@ export function AuthProvider({ children }) {
       console.warn('Failed to save user to database:', error.message);
     }
   }, []);
+
+  const refreshDbUser = useCallback(async () => {
+    if (!user?.email) return null;
+    const response = await getUserByEmail(user.email);
+    setDbUser(response.data.user);
+    return response.data.user;
+  }, [user?.email]);
 
   const onAuthStateChanged = useCallback((callback) => firebaseOnAuthStateChanged(auth, callback), []);
 
@@ -75,7 +93,9 @@ export function AuthProvider({ children }) {
       googleSignIn,
       resetPassword,
       updateUserProfile,
+      changePassword,
       saveAuthenticatedUser,
+      refreshDbUser,
       onAuthStateChanged
     }),
     [
@@ -88,7 +108,9 @@ export function AuthProvider({ children }) {
       googleSignIn,
       resetPassword,
       updateUserProfile,
+      changePassword,
       saveAuthenticatedUser,
+      refreshDbUser,
       onAuthStateChanged
     ]
   );

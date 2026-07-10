@@ -195,3 +195,83 @@ export async function updateChefAvailability(req, res) {
     return res.status(500).json({ success: false, message: 'Failed to update availability' });
   }
 }
+
+export async function updateCustomerProfile(req, res) {
+  try {
+    const email = String(req.params.email || '').trim().toLowerCase();
+    const name = String(req.body.name || '').trim();
+    const photo = String(req.body.photo || '').trim();
+    const phone = String(req.body.phone || '').trim();
+    const address = String(req.body.address || '').trim();
+    const city = String(req.body.city || '').trim();
+    const country = String(req.body.country || '').trim();
+
+    if (!email || name.length < 2) return res.status(400).json({ success: false, message: 'Email and a valid name are required' });
+    if (photo && !/^https?:\/\//i.test(photo)) return res.status(400).json({ success: false, message: 'Profile photo must be a valid URL' });
+
+    const result = await getUsersCollection().findOneAndUpdate(
+      { email },
+      { $set: { name, photo, phone, address, city, country, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    const updatedUser = result?.value || result;
+    if (!updatedUser) return res.status(404).json({ success: false, message: 'User not found' });
+
+    return res.status(200).json({ success: true, message: 'Profile updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Update customer profile failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+}
+
+const notificationPreferenceKeys = ['orderNotifications', 'newReviewNotifications', 'messages', 'promotions', 'systemUpdates'];
+
+export async function updateCustomerNotificationPreferences(req, res) {
+  try {
+    const email = String(req.params.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, message: 'Customer email is required' });
+
+    const preferences = {};
+    for (const key of notificationPreferenceKeys) {
+      if (typeof req.body[key] !== 'boolean') return res.status(400).json({ success: false, message: `${key} must be true or false` });
+      preferences[key] = req.body[key];
+    }
+    preferences.updatedAt = new Date();
+
+    const result = await getUsersCollection().updateOne(
+      { email, role: 'customer', status: { $ne: 'inactive' } },
+      { $set: { notificationPreferences: preferences } }
+    );
+    if (!result.matchedCount) return res.status(404).json({ success: false, message: 'Active customer account not found' });
+    return res.status(200).json({ success: true, message: 'Notification preferences updated successfully', data: preferences });
+  } catch (error) {
+    console.error('Update customer notification preferences failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to update notification preferences' });
+  }
+}
+
+export async function deactivateCustomerAccount(req, res) {
+  try {
+    const email = String(req.params.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, message: 'Customer email is required' });
+
+    const customer = await getUsersCollection().findOne({ email, role: 'customer', status: { $ne: 'inactive' } });
+    if (!customer) return res.status(404).json({ success: false, message: 'Active customer account not found' });
+
+    const activeOrders = await getDB().collection('orders').countDocuments({
+      'customer.email': email,
+      status: { $nin: ['delivered', 'rejected', 'cancelled'] }
+    });
+    if (activeOrders > 0) return res.status(409).json({ success: false, message: 'You have active orders. Complete them before deleting your account.' });
+
+    const deactivatedAt = new Date();
+    await getUsersCollection().updateOne(
+      { _id: customer._id },
+      { $set: { status: 'inactive', deactivatedAt, updatedAt: deactivatedAt } }
+    );
+    return res.status(200).json({ success: true, message: 'Customer account deactivated successfully' });
+  } catch (error) {
+    console.error('Deactivate customer account failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to deactivate customer account' });
+  }
+}

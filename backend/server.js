@@ -12,6 +12,17 @@ const backendDirectory = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(backendDirectory, '.env') });
 
 const PORT = process.env.PORT || 4000;
+const configuredClientOrigins = String(process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedClientOrigins = new Set([
+  ...configuredClientOrigins,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+]);
 
 const database = await connectDB();
 
@@ -27,7 +38,10 @@ if (database) {
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin(origin, callback) {
+      if (!origin || allowedClientOrigins.has(origin)) return callback(null, true);
+      return callback(new Error('Socket.IO origin is not allowed'));
+    },
     methods: ['GET', 'POST']
   }
 });
@@ -103,9 +117,13 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('chat:presence:check', (email) => {
+  socket.on('chat:presence:check', async (email) => {
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-    if (normalizedEmail) socket.emit('chat:presence', { email: normalizedEmail, online: onlineUsers.has(normalizedEmail) });
+    if (!normalizedEmail) return;
+
+    const connectedSockets = await io.in(userRoom(normalizedEmail)).fetchSockets();
+    const isOnline = connectedSockets.some((connectedSocket) => connectedSocket.data.userEmail === normalizedEmail);
+    socket.emit('chat:presence', { email: normalizedEmail, online: isOnline });
   });
 
   socket.on('join-order', (orderId) => {

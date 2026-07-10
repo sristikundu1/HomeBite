@@ -53,7 +53,7 @@ export default function ReviewForm({ order }) {
   if (checking) return <div className="h-64 animate-pulse rounded-[2rem] bg-[var(--bg-muted)]" />;
 
   return (
-    <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
+    <motion.section id="review" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="scroll-mt-28 rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Delivered order</p>
       <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">{existingReview ? 'Your Review' : 'Rate Your Order'}</h2>
 
@@ -81,4 +81,3 @@ export default function ReviewForm({ order }) {
     </motion.section>
   );
 }
-

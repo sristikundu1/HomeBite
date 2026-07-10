@@ -1,257 +1,122 @@
-import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Award, BadgeCheck, BriefcaseBusiness, CalendarClock, Check, CheckCircle2, ChefHat, CircleDollarSign, Clock3, FileCheck2, HeartHandshake, Image, LayoutDashboard, Loader2, MapPin, PackageCheck, Phone, Send, ShieldCheck, Sparkles, Star, Store, TrendingUp, User, Utensils, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
-import {
-  BriefcaseBusiness,
-  ChefHat,
-  Image,
-  Loader2,
-  MapPin,
-  Phone,
-  Send,
-  Sparkles,
-  User,
-  Utensils
-} from 'lucide-react';
 import { useAuth } from '../providers/AuthProvider';
-import { submitChefApplication } from '../services/chefApplicationsApi';
+import { getChefApplications, submitChefApplication } from '../services/chefApplicationsApi';
 
-const chefApplicationSchema = z.object({
-  name: z.string().min(2, 'Full name is required'),
-  phone: z.string().min(6, 'Phone number is required'),
-  address: z.string().min(5, 'Address is required'),
-  city: z.string().min(2, 'City is required'),
-  experience: z.string().min(1, 'Years of experience is required'),
-  specialties: z.string().min(2, 'Cuisine specialties are required'),
-  bio: z.string().min(20, 'Bio must be at least 20 characters'),
-  profileImage: z.string().url('Enter a valid image URL').optional().or(z.literal(''))
+const schema = z.object({
+  name: z.string().trim().min(2, 'Enter your full name.'),
+  phone: z.string().trim().regex(/^[+\d][\d\s()-]{5,19}$/, 'Enter a valid phone number.'),
+  address: z.string().trim().min(8, 'Enter your complete street address.'),
+  city: z.string().trim().min(2, 'Enter your city.'),
+  experience: z.string().refine((value) => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 60, 'Experience must be between 0 and 60 years.'),
+  specialties: z.string().trim().min(3, 'Add at least one cuisine specialty.'),
+  bio: z.string().trim().min(50, 'Tell us more about yourself (at least 50 characters).').max(1000, 'Bio cannot exceed 1,000 characters.'),
+  profileImage: z.string().url('Enter a valid image URL.').optional().or(z.literal(''))
 });
 
-const fieldClass =
-  'w-full rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] py-4 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition duration-300 placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-[var(--accent-soft)] focus:shadow-[0_0_0_4px_var(--accent-soft)]';
+const fieldClass = 'w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]';
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
+const rise = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } };
+const benefits = [
+  { icon: CircleDollarSign, title: 'Earn on your terms', text: 'Turn your signature dishes into a flexible local business.' },
+  { icon: HeartHandshake, title: 'Build your community', text: 'Meet customers who value authentic home-cooked food.' },
+  { icon: Store, title: 'Powerful chef tools', text: 'Manage meals, availability, orders, reviews, and revenue.' }
+];
+const requirements = ['A clean and safe home kitchen', 'A passion for consistent, quality food', 'Reliable availability and order communication', 'Accurate meal, ingredient, and allergy information'];
+const faqs = [
+  ['How long does review take?', 'Most applications receive a decision within 2–5 business days.'],
+  ['Do I need professional experience?', 'No. Skilled home cooks are welcome—tell us clearly about your experience and specialties.'],
+  ['Can I choose when I cook?', 'Yes. Approved chefs control food availability and their working schedule.'],
+  ['Does applying cost anything?', 'No. Submitting a HomeBite chef application is free.']
+];
 
-function ErrorMessage({ message }) {
-  if (!message) return null;
-
-  return (
-    <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-[var(--accent)]">
-      {message}
-    </motion.p>
-  );
-}
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+function formatDate(value) { return value ? new Intl.DateTimeFormat('en-BD', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not available'; }
 
 export default function BecomeChef() {
-  const { user, dbUser } = useAuth();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting }
-  } = useForm({
-    resolver: zodResolver(chefApplicationSchema),
-    defaultValues: {
-      name: dbUser?.name || user?.displayName || '',
-      phone: '',
-      address: '',
-      city: '',
-      experience: '',
-      specialties: '',
-      bio: '',
-      profileImage: dbUser?.photo || user?.photoURL || ''
-    }
-  });
+  const { user, dbUser, loading: authLoading, refreshDbUser } = useAuth();
+  const [application, setApplication] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [showReapply, setShowReapply] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const email = normalizeEmail(dbUser?.email || user?.email);
+  const role = dbUser?.role || (user ? 'customer' : null);
+  const chefStatus = dbUser?.chefStatus || 'none';
 
-  const onSubmit = async (data) => {
-    if (!user?.email) {
-      toast.error('Please login before applying to become a chef.');
-      return;
-    }
+  useEffect(() => {
+    let active = true;
+    if (!email || !['pending', 'rejected'].includes(chefStatus)) { setApplication(null); return () => { active = false; }; }
+    setStatusLoading(true);
+    getChefApplications()
+      .then((response) => {
+        if (!active) return;
+        const latest = (response.data.applications || []).filter((item) => normalizeEmail(item.email) === email).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+        setApplication(latest || null);
+      })
+      .catch(() => { if (active) toast.error('Unable to load your latest application.'); })
+      .finally(() => { if (active) setStatusLoading(false); });
+    return () => { active = false; };
+  }, [chefStatus, email]);
 
-    try {
-      await submitChefApplication({
-        name: data.name,
-        email: user.email,
-        firebaseUid: user.uid,
-        phone: data.phone,
-        address: data.address,
-        city: data.city,
-        location: `${data.address}, ${data.city}`,
-        experience: data.experience,
-        specialties: data.specialties
-          .split(',')
-          .map((specialty) => specialty.trim())
-          .filter(Boolean),
-        bio: data.bio,
-        documents: data.profileImage ? [data.profileImage] : []
-      });
+  if (authLoading) return <PageLoading />;
+  if (!user) return <VisitorExperience />;
+  if (role === 'chef' && chefStatus === 'approved') return <ApprovedState />;
+  if (chefStatus === 'pending' || submitted) return <StatusState type="pending" application={application} loading={statusLoading} />;
+  if (chefStatus === 'rejected' && !showReapply) return <RejectedState application={application} loading={statusLoading} onReapply={() => setShowReapply(true)} />;
 
-      toast.success('Chef application submitted successfully.');
-      reset();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit chef application.');
-    }
-  };
-
-  return (
-    <main className="relative overflow-x-hidden bg-[var(--bg-page)] text-[var(--text-primary)]">
-      <section className="relative overflow-hidden px-4 pb-20 pt-[120px] sm:px-6 lg:px-8 lg:pb-[120px] lg:pt-[150px]">
-        <div className="mx-auto grid max-w-[1400px] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-          >
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent)] shadow-lg shadow-black/5">
-              <ChefHat size={15} />
-              Become a Chef
-            </span>
-            <h1 className="mt-7 max-w-3xl text-5xl font-semibold leading-tight tracking-normal text-[var(--text-primary)] sm:text-6xl lg:text-[72px]">
-              Share your kitchen with the HomeBite community.
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">
-              Tell us about your cooking experience, specialties, and story. Our team will review your application before chef tools are enabled.
-            </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              {['Local meals', 'Flexible hours', 'Chef tools'].map((item) => (
-                <div key={item} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-lg shadow-black/5">
-                  <Sparkles className="h-5 w-5 text-[var(--accent)]" />
-                  <p className="mt-3 text-sm font-semibold text-[var(--text-primary)]">{item}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.form
-            onSubmit={handleSubmit(onSubmit)}
-            initial={{ opacity: 0, y: 28, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.75, ease: 'easeOut', delay: 0.08 }}
-            className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)]/95 p-6 shadow-[var(--shadow-elevated)] backdrop-blur-xl sm:p-8 lg:p-10"
-          >
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-[0.32em] text-[var(--accent)]">Application</span>
-              <h2 className="mt-4 text-3xl font-semibold tracking-normal text-[var(--text-primary)] sm:text-4xl">
-                Chef details
-              </h2>
-            </div>
-
-            <div className="mt-8 grid gap-5">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-3">
-                  <label htmlFor="chef-name" className="text-sm font-medium text-[var(--text-secondary)]">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                    <input id="chef-name" type="text" placeholder="Your full name" {...register('name')} className={fieldClass} />
-                  </div>
-                  <ErrorMessage message={errors.name?.message} />
-                </div>
-
-                <div className="space-y-3">
-                  <label htmlFor="chef-phone" className="text-sm font-medium text-[var(--text-secondary)]">
-                    Phone
-                  </label>
-                  <div className="relative">
-                    <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                    <input id="chef-phone" type="tel" placeholder="Phone number" {...register('phone')} className={fieldClass} />
-                  </div>
-                  <ErrorMessage message={errors.phone?.message} />
-                </div>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-[1.4fr_0.6fr]">
-                <div className="space-y-3">
-                  <label htmlFor="chef-address" className="text-sm font-medium text-[var(--text-secondary)]">
-                    Address
-                  </label>
-                  <div className="relative">
-                    <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                    <input id="chef-address" type="text" placeholder="Street address" {...register('address')} className={fieldClass} />
-                  </div>
-                  <ErrorMessage message={errors.address?.message} />
-                </div>
-
-                <div className="space-y-3">
-                  <label htmlFor="chef-city" className="text-sm font-medium text-[var(--text-secondary)]">
-                    City
-                  </label>
-                  <input
-                    id="chef-city"
-                    type="text"
-                    placeholder="City"
-                    {...register('city')}
-                    className="w-full rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-4 text-sm text-[var(--text-primary)] outline-none transition duration-300 placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] focus:shadow-[0_0_0_4px_var(--accent-soft)]"
-                  />
-                  <ErrorMessage message={errors.city?.message} />
-                </div>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-3">
-                  <label htmlFor="chef-experience" className="text-sm font-medium text-[var(--text-secondary)]">
-                    Years of Experience
-                  </label>
-                  <div className="relative">
-                    <BriefcaseBusiness className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                    <input id="chef-experience" type="number" min="0" placeholder="3" {...register('experience')} className={fieldClass} />
-                  </div>
-                  <ErrorMessage message={errors.experience?.message} />
-                </div>
-
-                <div className="space-y-3">
-                  <label htmlFor="chef-specialties" className="text-sm font-medium text-[var(--text-secondary)]">
-                    Cuisine Specialties
-                  </label>
-                  <div className="relative">
-                    <Utensils className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                    <input id="chef-specialties" type="text" placeholder="Bangla, Italian, Desserts" {...register('specialties')} className={fieldClass} />
-                  </div>
-                  <ErrorMessage message={errors.specialties?.message} />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label htmlFor="chef-profile-image" className="text-sm font-medium text-[var(--text-secondary)]">
-                  Profile Image URL
-                </label>
-                <div className="relative">
-                  <Image className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--icon)]" />
-                  <input id="chef-profile-image" type="url" placeholder="https://example.com/profile.jpg" {...register('profileImage')} className={fieldClass} />
-                </div>
-                <ErrorMessage message={errors.profileImage?.message} />
-              </div>
-
-              <div className="space-y-3">
-                <label htmlFor="chef-bio" className="text-sm font-medium text-[var(--text-secondary)]">
-                  Bio
-                </label>
-                <textarea
-                  id="chef-bio"
-                  rows={6}
-                  placeholder="Tell us about your cooking style, signature dishes, and kitchen story..."
-                  {...register('bio')}
-                  className="w-full resize-none rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-4 text-sm text-[var(--text-primary)] outline-none transition duration-300 placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] focus:shadow-[0_0_0_4px_var(--accent-soft)]"
-                />
-                <ErrorMessage message={errors.bio?.message} />
-              </div>
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={isSubmitting}
-              whileHover={{ y: -2, scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send size={18} />}
-              {isSubmitting ? 'Submitting...' : 'Submit Application'}
-            </motion.button>
-          </motion.form>
-        </div>
-      </section>
-    </main>
-  );
+  return <ApplicationExperience user={user} dbUser={dbUser} reapplying={chefStatus === 'rejected'} onSubmitted={async (newApplication) => { setApplication(newApplication); setSubmitted(true); await refreshDbUser().catch(() => {}); }} />;
 }
+
+function Hero({ visitor = false }) {
+  return <section className="relative overflow-hidden px-4 pb-16 pt-[120px] sm:px-6 lg:px-8 lg:pb-24 lg:pt-[150px]"><Decorations /><div className="relative mx-auto grid max-w-[1400px] gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"><motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}><Pill icon={ChefHat}>Become a HomeBite Chef</Pill><h1 className="mt-7 max-w-4xl text-5xl font-semibold leading-[1.08] text-[var(--text-primary)] sm:text-6xl lg:text-7xl">Your kitchen has a story. <span className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">Share it.</span></h1><p className="mt-6 max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">Cook what you love, build loyal local customers, and grow with tools designed for independent home chefs.</p>{visitor && <div className="mt-8 flex flex-wrap gap-3"><ActionLink to="/login">Login to Apply</ActionLink><ActionLink to="/register" secondary>Create Account</ActionLink></div>}<div className="mt-9 grid max-w-2xl grid-cols-3 gap-3"><MiniStat value="2–5" label="Days to review" /><MiniStat value="100%" label="Flexible hours" /><MiniStat value="Free" label="To apply" /></div></motion.div><ChefIllustration /></div></section>;
+}
+
+function VisitorExperience() { return <main className="overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)]"><Hero visitor /><MarketingSections /><FAQ /><Testimonials /></main>; }
+
+function ApplicationExperience({ user, dbUser, reapplying, onSubmitted }) {
+  return <main className="overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)]"><Hero /><section className="px-4 pb-24 sm:px-6 lg:px-8"><div className="mx-auto max-w-[1400px]"><Progress current={1} /><div className="mt-10 grid gap-8 xl:grid-cols-[0.72fr_1.28fr]"><ApplicationTimeline /><ApplicationForm user={user} dbUser={dbUser} reapplying={reapplying} onSubmitted={onSubmitted} /></div></div></section><MarketingSections /><FAQ /></main>;
+}
+
+function ApplicationForm({ user, dbUser, reapplying, onSubmitted }) {
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: { name: dbUser?.name || user.displayName || '', phone: '', address: '', city: '', experience: '', specialties: '', bio: '', profileImage: dbUser?.photo || user.photoURL || '' } });
+  const bioLength = watch('bio')?.length || 0;
+  async function submit(data) {
+    try {
+      const response = await submitChefApplication({ name: data.name.trim(), email: user.email, firebaseUid: user.uid, phone: data.phone.trim(), address: data.address.trim(), city: data.city.trim(), location: `${data.address.trim()}, ${data.city.trim()}`, experience: data.experience, specialties: data.specialties.split(',').map((item) => item.trim()).filter(Boolean), bio: data.bio.trim(), documents: data.profileImage ? [data.profileImage] : [] });
+      toast.success(response.data.message || 'Chef application submitted successfully.');
+      await onSubmitted({ status: 'pending', submittedAt: new Date().toISOString() });
+    } catch (error) { toast.error(error.response?.data?.message || 'Failed to submit chef application.'); }
+  }
+  return <motion.form onSubmit={handleSubmit(submit)} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)]/95 p-5 shadow-[var(--shadow-elevated)] backdrop-blur-xl sm:p-8 lg:p-10" noValidate><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--accent)]">{reapplying ? 'Reapplication' : 'Chef application'}</p><h2 className="mt-3 text-3xl font-semibold text-[var(--text-primary)]">Tell us about your kitchen</h2></div><span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold text-[var(--accent)]">Step 1 of 3</span></div><div className="mt-8 grid gap-5"><div className="grid gap-5 md:grid-cols-2"><Field id="chef-name" label="Full Name" icon={User} error={errors.name?.message}><input id="chef-name" placeholder="Your full name" {...register('name')} className={fieldClass} /></Field><Field id="chef-phone" label="Phone" icon={Phone} error={errors.phone?.message}><input id="chef-phone" type="tel" placeholder="+880 1XXX-XXXXXX" {...register('phone')} className={fieldClass} /></Field></div><div className="grid gap-5 md:grid-cols-[1.35fr_0.65fr]"><Field id="chef-address" label="Address" icon={MapPin} error={errors.address?.message}><input id="chef-address" placeholder="Street address" {...register('address')} className={fieldClass} /></Field><Field id="chef-city" label="City" error={errors.city?.message}><input id="chef-city" placeholder="City" {...register('city')} className={fieldClass} /></Field></div><div className="grid gap-5 md:grid-cols-2"><Field id="chef-experience" label="Years of Experience" icon={BriefcaseBusiness} error={errors.experience?.message}><input id="chef-experience" type="number" min="0" max="60" placeholder="3" {...register('experience')} className={fieldClass} /></Field><Field id="chef-specialties" label="Cuisine Specialties" icon={Utensils} error={errors.specialties?.message}><input id="chef-specialties" placeholder="Bangla, Italian, Desserts" {...register('specialties')} className={fieldClass} /></Field></div><Field id="chef-image" label="Profile Image URL" icon={Image} error={errors.profileImage?.message} optional><input id="chef-image" type="url" placeholder="https://example.com/profile.jpg" {...register('profileImage')} className={fieldClass} /></Field><Field id="chef-bio" label="Your cooking story" error={errors.bio?.message}><textarea id="chef-bio" rows={6} maxLength={1000} placeholder="Share your cooking style, signature dishes, experience, and what makes your kitchen special..." {...register('bio')} className={`${fieldClass} resize-y`} /><span className={`mt-2 block text-right text-xs ${bioLength < 50 ? 'text-[var(--text-muted)]' : 'text-emerald-500'}`}>{bioLength}/1000</span></Field></div><motion.button type="submit" disabled={isSubmitting} whileHover={!isSubmitting ? { y: -2 } : {}} whileTap={!isSubmitting ? { scale: 0.98 } : {}} className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}{isSubmitting ? 'Submitting Application...' : reapplying ? 'Submit New Application' : 'Submit Application'}</motion.button><p className="mt-4 text-center text-xs leading-5 text-[var(--text-muted)]">By submitting, you confirm that your information is accurate and your kitchen follows local food-safety requirements.</p></motion.form>;
+}
+
+function StatusState({ application, loading }) { return <main className="min-h-screen bg-[var(--bg-page)] px-4 pb-24 pt-[130px] text-[var(--text-primary)] sm:px-6 lg:px-8"><div className="mx-auto max-w-[1050px]"><Progress current={2} />{loading ? <StatusSkeleton /> : <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} className="relative mt-10 overflow-hidden rounded-[2.25rem] border border-amber-500/20 bg-[var(--bg-surface)] p-7 text-center shadow-[var(--shadow-elevated)] sm:p-12"><SuccessIllustration tone="amber" icon={FileCheck2} /><span className="mt-7 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-500"><Clock3 className="h-4 w-4" /> Pending review</span><h1 className="mt-5 text-4xl font-semibold sm:text-5xl">Application submitted</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">Our administrators are reviewing your experience, specialties, and kitchen story. We will notify you as soon as a decision is made.</p><div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2"><InfoCard icon={CalendarClock} label="Submitted" value={formatDate(application?.submittedAt)} /><InfoCard icon={Clock3} label="Estimated review time" value="2–5 business days" /></div><div className="mx-auto mt-9 max-w-3xl"><ApplicationTimeline compact /></div></motion.section>}</div></main>; }
+
+function RejectedState({ application, loading, onReapply }) { return <main className="min-h-screen bg-[var(--bg-page)] px-4 pb-24 pt-[130px] text-[var(--text-primary)] sm:px-6 lg:px-8"><div className="mx-auto max-w-[950px]">{loading ? <StatusSkeleton /> : <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2.25rem] border border-red-500/20 bg-[var(--bg-surface)] p-7 text-center shadow-[var(--shadow-elevated)] sm:p-12"><SuccessIllustration tone="red" icon={XCircle} /><span className="mt-7 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-red-500">Application update</span><h1 className="mt-5 text-4xl font-semibold text-[var(--text-primary)]">Your journey can continue</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">Your previous application was not approved, but you can improve your information and apply again when you are ready.</p>{application?.rejectionReason && <div className="mx-auto mt-7 max-w-2xl rounded-2xl border border-red-500/15 bg-red-500/5 p-5 text-left"><p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">Admin feedback</p><p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">{application.rejectionReason}</p></div>}<motion.button type="button" onClick={onReapply} whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20"><Send className="h-4 w-4" /> Reapply</motion.button></motion.section>}</div></main>; }
+
+function ApprovedState() { const actions = [{ to: '/dashboard/chef', label: 'Chef Dashboard', icon: LayoutDashboard }, { to: '/dashboard/chef/manage-foods', label: 'Manage Foods', icon: Utensils }, { to: '/dashboard/chef/orders', label: 'View Orders', icon: PackageCheck }, { to: '/dashboard/chef/profile', label: 'My Profile', icon: User }]; return <main className="min-h-screen bg-[var(--bg-page)] px-4 pb-24 pt-[130px] text-[var(--text-primary)] sm:px-6 lg:px-8"><motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto max-w-[1050px] overflow-hidden rounded-[2.5rem] border border-emerald-500/20 bg-[var(--bg-surface)] p-7 text-center shadow-[var(--shadow-elevated)] sm:p-12"><Decorations /><div className="relative"><SuccessIllustration tone="emerald" icon={BadgeCheck} /><span className="mt-7 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-500"><BadgeCheck className="h-4 w-4" /> Verified Chef</span><h1 className="mt-5 text-4xl font-semibold sm:text-6xl">Welcome to the chef community!</h1><p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-[var(--text-secondary)]">Your application is approved and your professional chef tools are ready. Start sharing remarkable meals with HomeBite customers.</p><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{actions.map(({ to, label, icon: Icon }, index) => <motion.div key={to} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + index * 0.07 }}><Link to={to} className="group flex h-full flex-col items-center rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] p-5 transition hover:-translate-y-1 hover:border-emerald-500/30"><Icon className="h-6 w-6 text-emerald-500 transition group-hover:scale-110" /><span className="mt-3 text-sm font-semibold text-[var(--text-primary)]">{label}</span></Link></motion.div>)}</div></div></motion.section></main>; }
+
+function MarketingSections() { return <><section className="px-4 py-20 sm:px-6 lg:px-8"><motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} className="mx-auto max-w-[1400px]"><SectionHeading eyebrow="Why HomeBite" title="Built for cooks with ambition" text="Everything you need to turn trusted home cooking into a professional customer experience." /><div className="mt-10 grid gap-5 md:grid-cols-3">{benefits.map(({ icon: Icon, title, text }) => <motion.article key={title} variants={rise} whileHover={{ y: -6 }} className="rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg-surface)] p-7 shadow-lg shadow-black/5"><span className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><Icon className="h-6 w-6" /></span><h3 className="mt-5 text-xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">{text}</p></motion.article>)}</div></motion.div></section><section className="bg-[var(--bg-muted)] px-4 py-20 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-[1400px] gap-8 lg:grid-cols-2"><div><SectionHeading eyebrow="How it works" title="From application to first order" /><div className="mt-8 space-y-4">{['Share your chef story and specialties', 'Our team reviews your application', 'Set up foods, availability, and profile', 'Start receiving local customer orders'].map((text, index) => <motion.div key={text} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className="flex items-center gap-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-sm font-bold text-white">{index + 1}</span><p className="text-sm font-semibold">{text}</p></motion.div>)}</div></div><div className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-7 shadow-[var(--shadow-soft)] sm:p-9"><Pill icon={ShieldCheck}>Kitchen requirements</Pill><div className="mt-7 space-y-4">{requirements.map((item) => <div key={item} className="flex gap-3"><span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><Check className="h-3.5 w-3.5" /></span><p className="text-sm leading-6 text-[var(--text-secondary)]">{item}</p></div>)}</div><div className="mt-8 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 p-6 text-white"><TrendingUp className="h-7 w-7" /><p className="mt-4 text-2xl font-semibold text-white">Grow one meal at a time</p><p className="mt-2 text-sm leading-6 text-white/80">Control your menu, schedule, availability, and daily capacity while building repeat customers.</p></div></div></div></section></>; }
+
+function FAQ() { return <section className="px-4 py-20 sm:px-6 lg:px-8"><div className="mx-auto max-w-[1000px]"><SectionHeading eyebrow="Common questions" title="Everything you need to know" center /><div className="mt-10 grid gap-4 sm:grid-cols-2">{faqs.map(([question, answer], index) => <motion.article key={question} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.06 }} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-6"><h3 className="font-semibold">{question}</h3><p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">{answer}</p></motion.article>)}</div></div></section>; }
+function Testimonials() { return <section className="px-4 pb-24 sm:px-6 lg:px-8"><div className="mx-auto max-w-[1200px] rounded-[2.5rem] bg-gradient-to-br from-orange-500 to-rose-500 p-7 text-white shadow-xl shadow-orange-500/20 sm:p-12"><div className="flex gap-1">{[1, 2, 3, 4, 5].map((item) => <Star key={item} className="h-5 w-5 fill-white text-white" />)}</div><blockquote className="mt-6 max-w-4xl text-2xl font-semibold leading-relaxed text-white sm:text-3xl">“HomeBite helped me turn family recipes into a flexible business and connect with customers in my own community.”</blockquote><p className="mt-5 text-sm font-semibold text-white/80">— A HomeBite home chef</p></div></section>; }
+
+function ApplicationTimeline({ compact = false }) { const items = [{ icon: FileCheck2, title: 'Application submitted', text: 'Your information reaches our review team.' }, { icon: ShieldCheck, title: 'Quality review', text: 'We review your experience and kitchen story.' }, { icon: BadgeCheck, title: 'Decision & onboarding', text: 'Approved chefs unlock professional tools.' }]; return <motion.aside variants={stagger} initial="hidden" animate="show" className={`${compact ? 'grid gap-3 sm:grid-cols-3' : 'h-fit rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-soft)] lg:sticky lg:top-28 sm:p-8'}`}><div className={compact ? 'contents' : ''}>{!compact && <><Pill icon={Sparkles}>What happens next</Pill><h2 className="mt-5 text-2xl font-semibold">Application timeline</h2></>}{items.map(({ icon: Icon, title, text }, index) => <motion.div key={title} variants={rise} className={`${compact ? 'rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] p-4 text-left' : 'relative mt-7 flex gap-4'}`}><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><Icon className="h-5 w-5" /></span><div className={compact ? 'mt-3' : ''}><p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--accent)]">Step {index + 1}</p><h3 className="mt-1 text-sm font-semibold">{title}</h3><p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">{text}</p></div></motion.div>)}</div></motion.aside>; }
+function Progress({ current }) { return <div className="mx-auto flex max-w-3xl items-center" aria-label={`Application progress, step ${current} of 3`}>{['Apply', 'Review', 'Approved'].map((label, index) => { const step = index + 1; const active = step <= current; return <div key={label} className="flex flex-1 items-center last:flex-none"><div className="flex flex-col items-center"><span className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-bold transition ${active ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}>{active && step < current ? <Check className="h-4 w-4" /> : step}</span><span className={`mt-2 text-xs font-semibold ${active ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>{label}</span></div>{step < 3 && <span className={`mx-2 mb-5 h-0.5 flex-1 ${step < current ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`} />}</div>; })}</div>; }
+function Field({ id, label, icon: Icon, error, optional, children }) { return <div><label htmlFor={id} className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]">{Icon && <Icon className="h-4 w-4 text-[var(--accent)]" />}{label}{optional && <span className="font-normal text-[var(--text-muted)]">(optional)</span>}</label>{children}<AnimatePresence>{error && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-2 text-xs text-red-500">{error}</motion.p>}</AnimatePresence></div>; }
+function SectionHeading({ eyebrow, title, text, center }) { return <div className={center ? 'text-center' : ''}><p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--accent)]">{eyebrow}</p><h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{title}</h2>{text && <p className={`mt-4 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] ${center ? 'mx-auto' : ''}`}>{text}</p>}</div>; }
+function ChefIllustration() { return <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.1 }} className="relative mx-auto aspect-square w-full max-w-[520px]"><div className="absolute inset-10 rounded-full bg-gradient-to-br from-orange-400/25 to-rose-500/20 blur-2xl" /><motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }} className="absolute inset-[12%] flex flex-col items-center justify-center rounded-[3rem] border border-white/20 bg-[var(--bg-surface)]/80 shadow-[var(--shadow-elevated)] backdrop-blur-xl"><span className="flex h-28 w-28 items-center justify-center rounded-[2.25rem] bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-xl shadow-orange-500/25"><ChefHat className="h-14 w-14" /></span><p className="mt-7 text-2xl font-semibold">Cook. Share. Grow.</p><div className="mt-5 flex gap-3">{[Utensils, HeartHandshake, Award].map((Icon, index) => <motion.span key={index} animate={{ y: [0, -5, 0] }} transition={{ duration: 3, delay: index * 0.5, repeat: Infinity }} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><Icon className="h-5 w-5" /></motion.span>)}</div></motion.div></motion.div>; }
+function Decorations() { return <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true"><motion.span animate={{ x: [0, 20, 0], y: [0, -14, 0] }} transition={{ duration: 9, repeat: Infinity }} className="absolute -left-20 top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" /><motion.span animate={{ x: [0, -18, 0], y: [0, 20, 0] }} transition={{ duration: 11, repeat: Infinity }} className="absolute -right-24 top-12 h-80 w-80 rounded-full bg-rose-500/10 blur-3xl" /></div>; }
+function Pill({ icon: Icon, children }) { return <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)] shadow-sm"><Icon className="h-4 w-4" />{children}</span>; }
+function MiniStat({ value, label }) { return <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]/80 p-4 backdrop-blur"><p className="text-xl font-bold text-[var(--accent)] sm:text-2xl">{value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-xs">{label}</p></div>; }
+function ActionLink({ to, children, secondary }) { return <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}><Link to={to} className={`inline-flex rounded-full px-6 py-3.5 text-sm font-semibold ${secondary ? 'border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-primary)]' : 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/20'}`}>{children}</Link></motion.div>; }
+function InfoCard({ icon: Icon, label, value }) { return <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] p-5 text-left"><Icon className="h-5 w-5 text-[var(--accent)]" /><p className="mt-3 text-xs text-[var(--text-muted)]">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>; }
+function SuccessIllustration({ tone, icon: Icon }) { const colors = { amber: 'bg-amber-500/10 text-amber-500', red: 'bg-red-500/10 text-red-500', emerald: 'bg-emerald-500/10 text-emerald-500' }; return <motion.span initial={{ scale: 0.5, rotate: -15 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 180 }} className={`mx-auto flex h-28 w-28 items-center justify-center rounded-[2.25rem] ${colors[tone]}`}><Icon className="h-14 w-14" /></motion.span>; }
+function StatusSkeleton() { return <div className="mt-10 h-[560px] animate-pulse rounded-[2.25rem] border border-[var(--border)] bg-[var(--bg-surface)]" />; }
+function PageLoading() { return <main className="flex min-h-screen items-center justify-center bg-[var(--bg-page)]"><Loader2 className="h-10 w-10 animate-spin text-[var(--accent)]" /></main>; }

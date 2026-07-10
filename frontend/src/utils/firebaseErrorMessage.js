@@ -3,6 +3,7 @@ const firebaseErrorMessages = {
   'auth/invalid-email': 'Please enter a valid email address.',
   'auth/invalid-credential': 'Email or password is incorrect.',
   'auth/popup-closed-by-user': 'Sign-in was cancelled before it finished.',
+  'auth/requires-recent-login': 'Please sign in again before changing your password.',
   'auth/too-many-requests': 'Too many attempts. Please try again later.',
   'auth/user-disabled': 'This account has been disabled.',
   'auth/user-not-found': 'No account was found with this email.',

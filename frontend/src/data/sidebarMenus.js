@@ -29,14 +29,14 @@ const applyAgainItem = { label: 'Apply Again', path: '/cook', icon: ChefHat };
 
 export const sidebarMenus = {
   customer: [
-    { label: 'Overview', path: '/dashboard', icon: Home },
-    { label: 'My Orders', path: placeholderPath, icon: Package },
+    { label: 'Overview', path: '/dashboard/customer', icon: Home },
+    { label: 'My Orders', path: '/dashboard/orders', icon: Package },
     { label: 'My Cart', path: '/dashboard/cart', icon: ShoppingCart },
     { label: 'Track Orders', path: placeholderPath, icon: Truck },
     { label: 'Wishlist', path: '/dashboard/wishlist', icon: Heart },
     { label: 'Messages', path: '/dashboard/messages', icon: MessageCircle },
-    { label: 'Notifications', path: placeholderPath, icon: Bell },
-    { label: 'My Reviews', path: placeholderPath, icon: Star },
+    { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
+    { label: 'My Reviews', path: '/dashboard/reviews', icon: Star },
     { label: 'Profile', path: '/dashboard/profile', icon: User },
     { label: 'Settings', path: '/dashboard/settings', icon: Settings }
   ],
@@ -49,8 +49,9 @@ export const sidebarMenus = {
     { label: 'Revenue', path: '/dashboard/chef/revenue', icon: WalletCards },
     { label: 'Reviews', path: '/dashboard/chef/reviews', icon: Star },
     { label: 'Messages', path: '/dashboard/chef/messages', icon: MessageCircle },
-    { label: 'Profile', path: '/dashboard/profile', icon: User },
-    { label: 'Settings', path: '/dashboard/settings', icon: Settings }
+    { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
+    { label: 'Profile', path: '/dashboard/chef/profile', icon: User },
+    { label: 'Settings', path: '/dashboard/chef/settings', icon: Settings }
   ],
   admin: [
     { label: 'Overview', path: '/dashboard', icon: Home },
@@ -60,6 +61,7 @@ export const sidebarMenus = {
     { label: 'Manage Foods', path: placeholderPath, icon: Utensils },
     { label: 'Manage Orders', path: placeholderPath, icon: ReceiptText },
     { label: 'Messages', path: '/dashboard/messages', icon: MessageCircle },
+    { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
     { label: 'Reports', path: placeholderPath, icon: LineChart },
     { label: 'Coupons', path: placeholderPath, icon: TicketPercent },
     { label: 'Gift Cards', path: placeholderPath, icon: Gift },

@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, ChefHat, Heart, ImageOff, ShoppingBag, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, ChefHat, Heart, ImageOff, Search, ShoppingBag, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
+import useCart from '../../hooks/useCart';
 import useWishlist from '../../hooks/useWishlist';
 import { getFood } from '../../services/foodsApi';
 
@@ -20,10 +21,38 @@ function formatPrice(value) {
 
 export default function Wishlist() {
   const { wishlistIds, removeFromWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState('newest');
+  const [movingId, setMovingId] = useState('');
   const skipNextFetch = useRef(false);
   const wishlistKey = wishlistIds.join('|');
+
+  const categories = useMemo(
+    () => [...new Set(foods.map((food) => food.category).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [foods]
+  );
+
+  const visibleFoods = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const filtered = foods.filter((food) => {
+      const matchesSearch = !query || [food.title, food.chefName, food.category, food.cuisine]
+        .some((value) => String(value || '').toLowerCase().includes(query));
+      return matchesSearch && (category === 'all' || food.category === category);
+    });
+
+    return [...filtered].sort((a, b) => {
+      const priceA = Number(a.discountPrice ?? a.price ?? 0);
+      const priceB = Number(b.discountPrice ?? b.price ?? 0);
+      if (sort === 'price-low') return priceA - priceB;
+      if (sort === 'price-high') return priceB - priceA;
+      if (sort === 'name') return String(a.title || '').localeCompare(String(b.title || ''));
+      return wishlistIds.indexOf(foodId(b)) - wishlistIds.indexOf(foodId(a));
+    });
+  }, [category, foods, search, sort, wishlistIds]);
 
   useEffect(() => {
     let active = true;
@@ -66,6 +95,16 @@ export default function Wishlist() {
     removeFromWishlist(id);
   }
 
+  async function moveToCart(food) {
+    const id = foodId(food);
+    if (!id || movingId) return;
+
+    setMovingId(id);
+    const addedItem = await addToCart(food, 1);
+    if (addedItem) removeFood(food);
+    setMovingId('');
+  }
+
   return (
     <div className="mx-auto max-w-[1500px] space-y-8">
       <DashboardHeader title="My Wishlist" description="Keep your favorite homemade dishes close and revisit them whenever you are ready." />
@@ -73,13 +112,20 @@ export default function Wishlist() {
       {loading ? (
         <WishlistSkeleton />
       ) : foods.length ? (
-        <motion.section layout className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" aria-label="Wishlisted foods">
-          <AnimatePresence mode="popLayout">
-            {foods.map((food, index) => (
-              <WishlistCard key={foodId(food)} food={food} index={index} onRemove={removeFood} />
-            ))}
-          </AnimatePresence>
-        </motion.section>
+        <>
+          <WishlistControls search={search} onSearch={setSearch} category={category} onCategory={setCategory} categories={categories} sort={sort} onSort={setSort} />
+          {visibleFoods.length ? (
+            <motion.section layout className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" aria-label="Wishlisted foods">
+              <AnimatePresence mode="popLayout">
+                {visibleFoods.map((food, index) => (
+                  <WishlistCard key={foodId(food)} food={food} index={index} onRemove={removeFood} onMoveToCart={moveToCart} moving={movingId === foodId(food)} moveDisabled={Boolean(movingId)} />
+                ))}
+              </AnimatePresence>
+            </motion.section>
+          ) : (
+            <NoResults onReset={() => { setSearch(''); setCategory('all'); setSort('newest'); }} />
+          )}
+        </>
       ) : (
         <EmptyWishlist />
       )}
@@ -87,7 +133,38 @@ export default function Wishlist() {
   );
 }
 
-function WishlistCard({ food, index, onRemove }) {
+function WishlistControls({ search, onSearch, category, onCategory, categories, sort, onSort }) {
+  const fieldClass = 'h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15';
+
+  return (
+    <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="grid gap-3 rounded-[1.5rem] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_220px_220px]" aria-label="Wishlist filters">
+      <label className="relative">
+        <span className="sr-only">Search wishlist</span>
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+        <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search foods, chefs, or cuisines" className={`${fieldClass} pl-11 pr-4`} />
+      </label>
+      <label className="relative">
+        <span className="sr-only">Filter by category</span>
+        <SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+        <select value={category} onChange={(event) => onCategory(event.target.value)} className={`${fieldClass} pl-11 pr-4`}>
+          <option value="all">All categories</option>
+          {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+      </label>
+      <label>
+        <span className="sr-only">Sort wishlist</span>
+        <select value={sort} onChange={(event) => onSort(event.target.value)} className={`${fieldClass} px-4`}>
+          <option value="newest">Recently saved</option>
+          <option value="name">Name: A to Z</option>
+          <option value="price-low">Price: Low to high</option>
+          <option value="price-high">Price: High to low</option>
+        </select>
+      </label>
+    </motion.section>
+  );
+}
+
+function WishlistCard({ food, index, onRemove, onMoveToCart, moving, moveDisabled }) {
   const [imageFailed, setImageFailed] = useState(false);
   const discounted = food.discountPrice !== null && food.discountPrice !== undefined;
 
@@ -136,15 +213,24 @@ function WishlistCard({ food, index, onRemove }) {
           <Link to={`/foods/${foodId(food)}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/15 transition hover:shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-orange-500/40">
             View Details <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <button type="button" disabled={!food.isAvailable} className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-page)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-45">
-            <ShoppingBag className="h-4 w-4" aria-hidden="true" /> Add To Cart
-          </button>
-          <button type="button" onClick={() => onRemove(food)} className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500/20">
-            <Trash2 className="h-4 w-4" aria-hidden="true" /> Remove
-          </button>
+          <motion.button type="button" onClick={() => onMoveToCart(food)} disabled={!food.isAvailable || moveDisabled} whileTap={{ scale: 0.97 }} className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-page)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-45">
+            <ShoppingBag className={`h-4 w-4 ${moving ? 'animate-bounce' : ''}`} aria-hidden="true" /> {moving ? 'Moving...' : 'Move to Cart'}
+          </motion.button>
+          
         </div>
       </div>
     </motion.article>
+  );
+}
+
+function NoResults({ onReset }) {
+  return (
+    <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[var(--border)] bg-[var(--bg-surface)] px-6 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500"><Search className="h-7 w-7" aria-hidden="true" /></span>
+      <h2 className="mt-5 text-xl font-semibold text-[var(--text-primary)]">No wishlist items found</h2>
+      <p className="mt-2 max-w-md text-sm text-[var(--text-secondary)]">Try another search term or clear the selected category.</p>
+      <button type="button" onClick={onReset} className="mt-6 rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]">Clear filters</button>
+    </motion.section>
   );
 }
 

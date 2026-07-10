@@ -19,3 +19,15 @@ export function getOrderReview(orderId) {
 export function getChefReviews(email) {
   return api.get(`/reviews/chef/${encodeURIComponent(email)}`);
 }
+
+export function getCustomerReviews(email) {
+  return api.get(`/reviews/customer/${encodeURIComponent(email)}`);
+}
+
+export function updateReview(id, review) {
+  return api.patch(`/reviews/${id}`, review);
+}
+
+export function deleteReview(id, email) {
+  return api.delete(`/reviews/${id}`, { params: { email } });
+}

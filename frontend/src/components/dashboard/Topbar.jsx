@@ -8,6 +8,8 @@ import NotificationDropdown from '../notifications/NotificationDropdown';
 
 const pageTitles = {
   '/dashboard': 'Overview',
+  '/dashboard/customer': 'Customer Overview',
+  '/dashboard/orders': 'My Orders',
   '/dashboard/profile': 'Profile',
   '/dashboard/settings': 'Settings',
   '/dashboard/messages': 'Messages',
@@ -16,7 +18,9 @@ const pageTitles = {
   '/dashboard/chef/availability': 'Availability',
   '/dashboard/chef/revenue': 'Revenue',
   '/dashboard/chef/reviews': 'Reviews',
-  '/dashboard/chef/messages': 'Chef Messages'
+  '/dashboard/chef/messages': 'Chef Messages',
+  '/dashboard/chef/profile': 'Chef Profile',
+  '/dashboard/chef/settings': 'Chef Settings'
 };
 
 export default function Topbar({ sidebarCollapsed, onToggleSidebar, onOpenMobileSidebar }) {

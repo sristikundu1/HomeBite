@@ -60,6 +60,12 @@ export default function Chat({
 
   const selectedConversation = conversations.find((item) => documentId(item._id) === selectedId);
   const selectedPerson = otherParticipant(selectedConversation, email);
+  const selectedPersonEmail = normalizeEmail(selectedPerson?.email);
+  const presenceEmails = useMemo(
+    () => [...new Set(conversations.map((conversation) => normalizeEmail(otherParticipant(conversation, email)?.email)).filter(Boolean))],
+    [conversations, email]
+  );
+  const presenceKey = presenceEmails.join('|');
 
   const loadConversations = useCallback(async () => {
     if (!email) return;
@@ -112,18 +118,38 @@ export default function Chat({
     if (!selectedId) { setMessages([]); return undefined; }
     let active = true;
     setMessagesLoading(true);
-    socket.emit('chat:join', selectedId);
+
+    function joinConversation() {
+      socket.emit('chat:join', selectedId);
+    }
+
+    socket.on('connect', joinConversation);
+    if (socket.connected) joinConversation();
     getConversationMessages(selectedId, email)
       .then((response) => { if (active) setMessages(response.data.data || []); })
       .catch((error) => toast.error(error.response?.data?.message || 'Unable to load this conversation.'))
       .finally(() => { if (active) setMessagesLoading(false); });
     markChatRead(selectedId, email).then(() => setConversations((current) => current.map((item) => documentId(item._id) === selectedId ? { ...item, unreadCount: 0 } : item))).catch(() => {});
-    return () => { active = false; socket.emit('chat:leave', selectedId); };
+    return () => {
+      active = false;
+      socket.off('connect', joinConversation);
+      if (socket.connected) socket.emit('chat:leave', selectedId);
+    };
   }, [email, selectedId, socket]);
 
   useEffect(() => {
-    if (selectedPerson?.email) socket.emit('chat:presence:check', selectedPerson.email);
-  }, [selectedPerson?.email, socket]);
+    if (!presenceEmails.length) return undefined;
+
+    function checkPresence() {
+      presenceEmails.forEach((participantEmail) => socket.emit('chat:presence:check', participantEmail));
+    }
+
+    socket.on('connect', checkPresence);
+    if (socket.connected) checkPresence();
+    return () => socket.off('connect', checkPresence);
+    // presenceKey changes only when the conversation participant list changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presenceKey, socket]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, typingEmail]);
 
@@ -194,7 +220,7 @@ export default function Chat({
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {loading ? <ConversationSkeleton /> : (
               <>
-                {visibleConversations.map((conversation) => <ConversationButton key={documentId(conversation._id)} conversation={conversation} email={email} active={selectedId === documentId(conversation._id)} online={online[otherParticipant(conversation, email)?.email]} onClick={() => setSelectedId(documentId(conversation._id))} />)}
+                {visibleConversations.map((conversation) => <ConversationButton key={documentId(conversation._id)} conversation={conversation} email={email} active={selectedId === documentId(conversation._id)} online={online[normalizeEmail(otherParticipant(conversation, email)?.email)]} onClick={() => setSelectedId(documentId(conversation._id))} />)}
                 {availableContacts.length > 0 && <p className="px-3 pb-2 pt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">Start a conversation</p>}
                 {availableContacts.map((contact) => <button key={contact.email} type="button" onClick={() => startConversation(contact)} className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-[var(--bg-muted)]"><Avatar person={contact} /><span className="min-w-0"><span className="block truncate text-sm font-semibold text-[var(--text-primary)]">{contact.name}</span><span className="block text-xs capitalize text-[var(--text-muted)]">{contact.role}</span></span></button>)}
                 {!visibleConversations.length && !availableContacts.length && <div className="px-5 py-16 text-center"><MessageCircle className="mx-auto h-8 w-8 text-[var(--text-muted)]" /><p className="mt-3 text-sm font-semibold text-[var(--text-primary)]">No conversations found</p></div>}
@@ -208,8 +234,8 @@ export default function Chat({
             <>
               <header className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-6">
                 <button type="button" onClick={() => setSelectedId('')} className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] md:hidden" aria-label="Back to conversations"><ArrowLeft className="h-4 w-4" /></button>
-                <div className="relative"><Avatar person={selectedPerson} /><Circle className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current ${online[selectedPerson.email] ? 'text-emerald-500' : 'text-slate-400'}`} /></div>
-                <div className="min-w-0"><h2 className="truncate text-base font-semibold text-[var(--text-primary)]">{selectedPerson.name}</h2><p className="text-xs text-[var(--text-muted)]">{online[selectedPerson.email] ? 'Online' : 'Offline'} · <span className="capitalize">{selectedPerson.role}</span></p></div>
+                <div className="relative"><Avatar person={selectedPerson} /><Circle className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current ${online[selectedPersonEmail] ? 'text-emerald-500' : 'text-slate-400'}`} /></div>
+                <div className="min-w-0"><h2 className="truncate text-base font-semibold text-[var(--text-primary)]">{selectedPerson.name}</h2><p className="text-xs text-[var(--text-muted)]">{online[selectedPersonEmail] ? 'Online' : 'Offline'} · <span className="capitalize">{selectedPerson.role}</span></p></div>
               </header>
               <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--bg-page)]/55 p-4 sm:p-6">
                 {messagesLoading ? <MessageSkeleton /> : messages.length ? messages.map((message) => <MessageBubble key={documentId(message._id)} message={message} own={normalizeEmail(message.senderEmail) === email} />) : <div className="flex h-full items-center justify-center text-center"><div><MessageCircle className="mx-auto h-10 w-10 text-[var(--accent)]" /><p className="mt-4 font-semibold text-[var(--text-primary)]">Start the conversation</p><p className="mt-1 text-sm text-[var(--text-muted)]">Messages are delivered instantly and saved securely.</p></div></div>}

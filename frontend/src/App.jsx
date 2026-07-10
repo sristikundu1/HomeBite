@@ -43,6 +43,12 @@ import ChefAvailability from './pages/dashboard/ChefAvailability';
 import ChefRevenue from './pages/dashboard/ChefRevenue';
 import ChefReviews from './pages/dashboard/ChefReviews';
 import ChefMessages from './pages/dashboard/ChefMessages';
+import ChefProfile from './pages/dashboard/ChefProfile';
+import ChefSettings from './pages/dashboard/ChefSettings';
+import CustomerOverview from './pages/dashboard/CustomerOverview';
+import CustomerOrders from './pages/dashboard/CustomerOrders';
+import Notifications from './pages/dashboard/Notifications';
+import CustomerReviews from './pages/dashboard/CustomerReviews';
 
 function App() {
   return (
@@ -87,6 +93,8 @@ function App() {
           }
         >
           <Route index element={<DashboardHome />} />
+          <Route path="customer" element={<CustomerOverview />} />
+          <Route path="orders" element={<CustomerOrders />} />
           <Route path="profile" element={<DashboardProfile />} />
           <Route path="settings" element={<DashboardSettings />} />
           <Route path="wishlist" element={<Wishlist />} />
@@ -94,6 +102,8 @@ function App() {
           <Route path="checkout" element={<Checkout />} />
           <Route path="orders/:id" element={<CustomerOrderDetails />} />
           <Route path="messages" element={<Chat />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="reviews" element={<CustomerReviews />} />
           <Route
             path="chef"
             element={
@@ -147,6 +157,22 @@ function App() {
             element={
               <ChefRoute>
                 <ChefMessages />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/profile"
+            element={
+              <ChefRoute>
+                <ChefProfile />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/settings"
+            element={
+              <ChefRoute>
+                <ChefSettings />
               </ChefRoute>
             }
           />

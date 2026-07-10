@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 function CTA() {
   return (
@@ -31,12 +32,17 @@ function CTA() {
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <button className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/25 transition hover:brightness-110">
+                <Link
+                to="/foods"
+                 className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-[var(--button-text)] shadow-lg shadow-orange-500/25 transition hover:brightness-110">
                   Order Meals
-                </button>
-                <button className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20">
+                </Link>
+                <Link
+                  to="/cook"
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-4 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                >
                   Become a Cook
-                </button>
+                </Link>
               </div>
             </div>
           </div>

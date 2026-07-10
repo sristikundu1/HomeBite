@@ -34,6 +34,57 @@ Allowed values:
 }
 ```
 
+## orders
+
+Stores paid customer orders. An order is created only after its Stripe PaymentIntent has a `succeeded` status.
+
+```js
+{
+  _id: ObjectId,
+  customer: {
+    id: ObjectId,
+    name: String,
+    email: String,
+    photo: String
+  },
+  chef: Object | Object[],
+  foods: [
+    {
+      foodId: ObjectId,
+      name: String,
+      image: String,
+      price: Number,
+      quantity: Number,
+      subtotal: Number
+    }
+  ],
+  shippingAddress: Object,
+  paymentIntentId: String,
+  transactionId: String,
+  subtotal: Number,
+  tax: Number,
+  deliveryFee: Number,
+  total: Number,
+  status: String, // default: 'pending'
+  orderDate: Date,
+  paymentStatus: 'paid'
+}
+```
+
+- `customer`: Snapshot of the customer who placed the order.
+- `chef`: Chef snapshot, or an array of chef snapshots when a cart contains foods from multiple chefs.
+- `foods`: Purchased food snapshots with the quantity and line subtotal paid.
+- `shippingAddress`: Validated delivery information submitted at checkout.
+- `paymentIntentId`: Stripe PaymentIntent identifier. A unique index prevents duplicate orders for one payment.
+- `transactionId`: Stripe charge identifier, falling back to the PaymentIntent identifier when necessary.
+- `subtotal`: Combined subtotal of all food lines.
+- `tax`: Tax charged for the order.
+- `deliveryFee`: Delivery fee charged for the order.
+- `total`: Amount verified from the successful Stripe PaymentIntent.
+- `status`: Fulfilment state. Defaults to `pending`.
+- `orderDate`: Date and time the order was created.
+- `paymentStatus`: Payment state. Always `paid` at creation because unpaid intents cannot create orders.
+
 ## chefApplications
 
 Stores applications from users who want to become chefs.

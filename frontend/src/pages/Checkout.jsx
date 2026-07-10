@@ -1,13 +1,22 @@
+import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { motion } from 'framer-motion';
 import { CreditCard, ImageOff, LockKeyhole, MapPin, PackageCheck, Phone, ShoppingBag } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import useCart from '../hooks/useCart';
+import { useAuth } from '../providers/AuthProvider';
+import { useTheme } from '../providers/ThemeProvider';
+import { createOrder, createPaymentIntent } from '../services/checkoutApi';
 
 const SHIPPING_STORAGE_KEY = 'checkoutShipping';
 const DELIVERY_FEE = 60;
 const TAX_RATE = 0.05;
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 const inputClass = 'mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]';
 
@@ -44,11 +53,39 @@ function formatPrice(value) {
 }
 
 export default function Checkout() {
-  const { cartItems, cartCount, totalPrice, loading } = useCart();
-  const [savedAt, setSavedAt] = useState(null);
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutContent />
+    </Elements>
+  );
+}
+
+function CheckoutContent() {
+  const stripe = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const { user, dbUser } = useAuth();
+  const { cartItems, cartCount, totalPrice, loading, clearCart } = useCart();
   const deliveryFee = cartItems.length ? DELIVERY_FEE : 0;
   const estimatedTax = totalPrice * TAX_RATE;
   const grandTotal = totalPrice + deliveryFee + estimatedTax;
+  const cardOptions = useMemo(
+    () => ({
+      hidePostalCode: true,
+      style: {
+        base: {
+          color: isDark ? '#eff3ff' : '#111827',
+          iconColor: '#f97316',
+          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+          fontSize: '16px',
+          '::placeholder': { color: '#94a3b8' }
+        },
+        invalid: { color: '#ef4444', iconColor: '#ef4444' }
+      }
+    }),
+    [isDark]
+  );
   const {
     register,
     handleSubmit,
@@ -61,10 +98,57 @@ export default function Checkout() {
     return () => subscription.unsubscribe();
   }, [watch]);
 
-  function onSubmit(values) {
+  async function onSubmit(values) {
     saveShippingDraft(values);
-    setSavedAt(new Date());
-    toast.success('Shipping information saved.');
+
+    if (!stripe || !elements) {
+      toast.error('Stripe is not ready. Check the publishable key.');
+      return;
+    }
+
+    const card = elements.getElement(CardElement);
+    if (!card) {
+      toast.error('Card information is unavailable.');
+      return;
+    }
+
+    try {
+      const intentResponse = await createPaymentIntent(grandTotal);
+      const { paymentIntent, error: paymentError } = await stripe.confirmCardPayment(
+        intentResponse.data.clientSecret,
+        {
+          payment_method: {
+            card,
+            billing_details: {
+              email: dbUser?.email || user?.email || '',
+              phone: values.phone,
+              address: {
+                line1: values.address,
+                city: values.city,
+                postal_code: values.postalCode
+              }
+            }
+          }
+        }
+      );
+
+      if (paymentError) throw new Error(paymentError.message);
+      if (paymentIntent?.status !== 'succeeded') throw new Error('Payment was not completed.');
+
+      await createOrder({
+        userEmail: dbUser?.email || user?.email,
+        items: cartItems,
+        shipping: values,
+        paymentIntentId: paymentIntent.id
+      });
+
+      await clearCart();
+      window.localStorage.removeItem(SHIPPING_STORAGE_KEY);
+      toast.success('Payment successful. Order created.');
+      navigate('/dashboard/orders', { replace: true });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Payment failed. Please try again.');
+    }
   }
 
   if (loading) return <CheckoutSkeleton />;
@@ -102,12 +186,13 @@ export default function Checkout() {
             </motion.section>
 
             <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-lg shadow-black/5 sm:p-8" aria-labelledby="payment-title">
-              <div className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><CreditCard className="h-6 w-6" aria-hidden="true" /></span><div><h2 id="payment-title" className="text-xl font-semibold">Payment</h2><p className="mt-1 text-sm text-[var(--text-secondary)]">Payment integration is coming next.</p></div></div>
-              <div className="mt-7 flex min-h-40 flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--bg-muted)] px-6 text-center"><LockKeyhole className="h-8 w-8 text-[var(--accent)]" aria-hidden="true" /><p className="mt-4 text-sm font-semibold">Secure Payment Placeholder</p><p className="mt-2 max-w-md text-xs leading-6 text-[var(--text-muted)]">Stripe has not been connected yet. Your shipping draft will remain saved locally.</p></div>
+              <div className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><CreditCard className="h-6 w-6" aria-hidden="true" /></span><div><h2 id="payment-title" className="text-xl font-semibold">Payment</h2><p className="mt-1 text-sm text-[var(--text-secondary)]">Enter your card details securely with Stripe.</p></div></div>
+              <div className="mt-7 rounded-3xl border border-[var(--border)] bg-[var(--bg-muted)] p-5"><CardElement options={cardOptions} /></div>
+              <p className="mt-4 flex items-center gap-2 text-xs text-[var(--text-muted)]"><LockKeyhole className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />Your card details are sent securely to Stripe.</p>
             </motion.section>
           </div>
 
-          <OrderSummary items={cartItems} cartCount={cartCount} subtotal={totalPrice} deliveryFee={deliveryFee} tax={estimatedTax} grandTotal={grandTotal} isSubmitting={isSubmitting} savedAt={savedAt} />
+          <OrderSummary items={cartItems} cartCount={cartCount} subtotal={totalPrice} deliveryFee={deliveryFee} tax={estimatedTax} grandTotal={grandTotal} isSubmitting={isSubmitting} stripeReady={Boolean(stripe)} />
         </form>
       </div>
     </main>
@@ -118,7 +203,7 @@ function Field({ label, name, error, icon: Icon, children }) {
   return <label htmlFor={name} className="relative block text-sm font-semibold text-[var(--text-secondary)]">{label}<span className="ml-1 text-red-500" aria-hidden="true">*</span>{Icon && <Icon className="pointer-events-none absolute left-4 top-[3.25rem] h-4 w-4 text-[var(--text-muted)]" aria-hidden="true" />}{children}{error && <span id={`${name}-error`} role="alert" className="mt-2 block text-xs font-medium text-red-500">{error.message}</span>}</label>;
 }
 
-function OrderSummary({ items, cartCount, subtotal, deliveryFee, tax, grandTotal, isSubmitting, savedAt }) {
+function OrderSummary({ items, cartCount, subtotal, deliveryFee, tax, grandTotal, isSubmitting, stripeReady }) {
   return (
     <motion.aside initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-soft)] xl:sticky xl:top-28">
       <div className="flex items-center gap-3"><ShoppingBag className="h-6 w-6 text-[var(--accent)]" /><div><h2 className="text-xl font-semibold">Order Summary</h2><p className="mt-1 text-xs text-[var(--text-muted)]">{cartCount} {cartCount === 1 ? 'item' : 'items'}</p></div></div>
@@ -127,8 +212,7 @@ function OrderSummary({ items, cartCount, subtotal, deliveryFee, tax, grandTotal
       </div>
       <dl className="mt-6 space-y-4 border-y border-[var(--border)] py-6 text-sm"><SummaryRow label="Subtotal" value={subtotal} /><SummaryRow label="Delivery Fee" value={deliveryFee} /><SummaryRow label="Estimated Tax" value={tax} /></dl>
       <div className="flex items-end justify-between gap-4 py-6"><span className="font-semibold">Grand Total</span><span className="text-2xl font-bold">{formatPrice(grandTotal)}</span></div>
-      <motion.button type="submit" whileHover={items.length ? { y: -2 } : {}} whileTap={items.length ? { scale: 0.98 } : {}} disabled={!items.length || isSubmitting} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 disabled:cursor-not-allowed disabled:opacity-45"><PackageCheck className="h-5 w-5" />Save & Continue</motion.button>
-      {savedAt && <p className="mt-3 text-center text-xs text-emerald-500" aria-live="polite">Shipping saved at {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>}
+      <motion.button type="submit" whileHover={items.length && stripeReady ? { y: -2 } : {}} whileTap={items.length && stripeReady ? { scale: 0.98 } : {}} disabled={!items.length || !stripeReady || isSubmitting} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 disabled:cursor-not-allowed disabled:opacity-45"><PackageCheck className="h-5 w-5" />{isSubmitting ? 'Processing...' : `Pay ${formatPrice(grandTotal)}`}</motion.button>
     </motion.aside>
   );
 }

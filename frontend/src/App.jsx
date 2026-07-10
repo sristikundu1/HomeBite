@@ -49,6 +49,9 @@ import CustomerOverview from './pages/dashboard/CustomerOverview';
 import CustomerOrders from './pages/dashboard/CustomerOrders';
 import Notifications from './pages/dashboard/Notifications';
 import CustomerReviews from './pages/dashboard/CustomerReviews';
+import AdminOverview from './pages/dashboard/AdminOverview';
+import AdminUsers from './pages/dashboard/AdminUsers';
+import AdminFoods from './pages/dashboard/AdminFoods';
 
 function App() {
   return (
@@ -104,6 +107,30 @@ function App() {
           <Route path="messages" element={<Chat />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="reviews" element={<CustomerReviews />} />
+          <Route
+            path="admin"
+            element={
+              <AdminRoute>
+                <AdminOverview />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/foods"
+            element={
+              <AdminRoute>
+                <AdminFoods />
+              </AdminRoute>
+            }
+          />
           <Route
             path="chef"
             element={

@@ -54,17 +54,19 @@ export const sidebarMenus = {
     { label: 'Settings', path: '/dashboard/chef/settings', icon: Settings }
   ],
   admin: [
-    { label: 'Overview', path: '/dashboard', icon: Home },
+    { label: 'Overview', path: '/dashboard/admin', icon: Home },
     { label: 'Analytics', path: placeholderPath, icon: BarChart3 },
-    { label: 'Manage Users', path: placeholderPath, icon: Users },
+    { label: 'Manage Users', path: '/dashboard/admin/users', icon: Users },
     { label: 'Chef Verification', path: '/dashboard/admin/chef-verification', icon: SearchCheck },
-    { label: 'Manage Foods', path: placeholderPath, icon: Utensils },
+    { label: 'Manage Foods', path: '/dashboard/admin/foods', icon: Utensils },
     { label: 'Manage Orders', path: placeholderPath, icon: ReceiptText },
     { label: 'Messages', path: '/dashboard/messages', icon: MessageCircle },
     { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
     { label: 'Reports', path: placeholderPath, icon: LineChart },
     { label: 'Coupons', path: placeholderPath, icon: TicketPercent },
     { label: 'Gift Cards', path: placeholderPath, icon: Gift },
+    { label: 'Profile', path: '/dashboard/admin/profile', icon: User },
+    { label: 'Platform Settings', path: '/dashboard/admin/platform-settings', icon: Settings },
     { label: 'Settings', path: '/dashboard/settings', icon: Settings }
   ]
 };

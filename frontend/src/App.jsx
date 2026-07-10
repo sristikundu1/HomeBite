@@ -15,6 +15,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Cookies from './pages/Cookies';
 import BecomeChef from './pages/BecomeChef';
+import CategoriesPage from './pages/Categories';
 import ApplicationStatus from './pages/ApplicationStatus';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -93,6 +94,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/foods" element={<Foods />} />
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/foods/:id" element={<FoodDetails />} />
         </Route>
         <Route

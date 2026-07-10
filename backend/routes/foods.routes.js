@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   createFood,
+  getFoodCategories,
   getFoodById,
   getFoods,
   getFoodsByChef,
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.post('/', createFood);
 router.get('/', getFoods);
+router.get('/categories', getFoodCategories);
 router.get('/chef/:email', getFoodsByChef);
 router.get('/:id', getFoodById);
 router.put('/:id', updateFood);
@@ -22,4 +24,3 @@ router.patch('/:id/archive', toggleFoodArchive);
 router.delete('/:id', softDeleteFood);
 
 export default router;
-

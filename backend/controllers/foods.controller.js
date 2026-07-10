@@ -21,6 +21,27 @@ function handleError(res, error, action) {
   return sendError(res, 500, `Failed to ${action.toLowerCase()}`);
 }
 
+const FOOD_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Traditional Meals', 'Healthy Meals', 'Street Food', 'Vegetarian', 'Family Meals', 'Desserts', 'Snacks', 'Beverages'];
+const CATEGORY_ALIASES = { dessert: 'Desserts', 'healthy food': 'Healthy Meals' };
+
+export async function getFoodCategories(req, res) {
+  try {
+    const rows = await foodsCollection().aggregate([
+      { $match: { status: 'active', category: { $type: 'string', $ne: '' } } },
+      { $group: { _id: { $toLower: { $trim: { input: '$category' } } }, count: { $sum: 1 } } }
+    ]).toArray();
+    const counts = new Map();
+    rows.forEach((row) => {
+      const key = CATEGORY_ALIASES[row._id] || row._id;
+      counts.set(key, (counts.get(key) || 0) + row.count);
+    });
+    const data = FOOD_CATEGORIES.map((name) => ({ name, count: counts.get(name) || counts.get(name.toLowerCase()) || 0 }));
+    return sendSuccess(res, 200, 'Food categories retrieved successfully', data);
+  } catch (error) {
+    return handleError(res, error, 'Get food categories');
+  }
+}
+
 export async function createFood(req, res) {
   try {
     const errors = validateFood(req.body);

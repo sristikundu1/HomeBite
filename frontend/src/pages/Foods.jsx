@@ -15,9 +15,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getFoods } from '../services/foodsApi';
 import useWishlist from '../hooks/useWishlist';
+import { CATEGORY_NAMES, categoryDetails } from '../data/categoryCatalog';
 
 const PAGE_SIZE = 8;
 const priceRanges = [
@@ -49,10 +50,11 @@ function normalize(value) {
 }
 
 export default function Foods() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search')?.trim() || '');
+  const [category, setCategory] = useState(() => searchParams.get('category')?.trim() || 'all');
   const [cuisine, setCuisine] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
@@ -77,7 +79,12 @@ export default function Foods() {
     return () => { active = false; };
   }, []);
 
-  const categories = useMemo(() => [...new Set(foods.map((food) => food.category).filter(Boolean))].sort(), [foods]);
+  useEffect(() => {
+    setSearchTerm(searchParams.get('search')?.trim() || '');
+    setCategory(searchParams.get('category')?.trim() || 'all');
+  }, [searchParams]);
+
+  const categories = useMemo(() => [...new Set([...CATEGORY_NAMES, ...foods.map((food) => food.category).filter(Boolean)])], [foods]);
   const cuisines = useMemo(() => [...new Set(foods.map((food) => food.cuisine).filter(Boolean))].sort(), [foods]);
 
   const filteredFoods = useMemo(() => {
@@ -116,6 +123,7 @@ export default function Foods() {
     setCuisine('all');
     setPriceRange('all');
     setSortBy('newest');
+    setSearchParams({});
   }
 
   function handleWishlist(food) {
@@ -169,7 +177,7 @@ export default function Foods() {
             </motion.div>
             <Pagination currentPage={currentPage} totalPages={totalPages} count={filteredFoods.length} visibleCount={visibleFoods.length} onChange={setCurrentPage} />
           </>
-        ) : <EmptyState filtered={filtersActive} onReset={resetFilters} />}
+        ) : <EmptyState filtered={filtersActive} category={category !== 'all' ? category : ''} onReset={resetFilters} />}
       </main>
     </div>
   );
@@ -225,7 +233,9 @@ function FoodSkeletons() {
   return <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4" role="status" aria-label="Loading foods">{Array.from({ length: 8 }, (_, index) => <div key={index} className="overflow-hidden rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg-surface)]"><div className="aspect-[4/3] animate-pulse bg-[var(--bg-muted)]" /><div className="space-y-4 p-5"><div className="h-5 w-20 animate-pulse rounded-full bg-[var(--bg-muted)]" /><div className="h-6 w-3/4 animate-pulse rounded bg-[var(--bg-muted)]" /><div className="h-4 w-1/2 animate-pulse rounded bg-[var(--bg-muted)]" /><div className="h-12 animate-pulse rounded-full bg-[var(--bg-muted)]" /></div></div>)}</div>;
 }
 
-function EmptyState({ filtered, onReset }) {
+function EmptyState({ filtered, category, onReset }) {
+  const details = categoryDetails(category);
+  if (category) return <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[520px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center">{details?.image ? <img src={details.image} alt="" className="h-40 w-64 rounded-[1.75rem] object-cover shadow-[var(--shadow-soft)]"/> : <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--accent-soft)] text-[var(--accent)]"><UtensilsCrossed className="h-8 w-8"/></span>}<h2 className="mt-6 text-2xl font-semibold text-[var(--text-primary)]">No foods available in this category</h2><p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-secondary)]">We're working with local chefs to add more delicious meals in this category. Explore other categories in the meantime.</p><div className="mt-7 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={onReset} className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white">Browse All Foods</button><Link to="/" className="rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--text-primary)]">Back to Homepage</Link></div></motion.div>;
   return <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[420px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[var(--border)] bg-[var(--bg-surface)] px-6 text-center"><span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--accent-soft)] text-[var(--accent)]">{filtered ? <SlidersHorizontal className="h-8 w-8" /> : <UtensilsCrossed className="h-8 w-8" />}</span><h2 className="mt-5 text-2xl font-semibold text-[var(--text-primary)]">{filtered ? 'No matching foods' : 'No foods available yet'}</h2><p className="mt-3 max-w-md text-sm leading-7 text-[var(--text-secondary)]">{filtered ? 'Try changing your search or filters to discover more dishes.' : 'Fresh dishes from local chefs will appear here soon.'}</p>{filtered && <button type="button" onClick={onReset} className="mt-6 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white">Clear filters</button>}</motion.div>;
 }
 

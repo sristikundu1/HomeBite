@@ -6,8 +6,9 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import { getFood, updateFood } from '../../services/foodsApi';
+import { CATEGORY_NAMES } from '../../data/categoryCatalog';
 
-const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snacks', 'Beverages'];
+const categories = CATEGORY_NAMES;
 const spiceLevels = ['Mild', 'Medium', 'Hot', 'Extra Hot'];
 const inputClass = 'mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-page)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--placeholder)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]';
 

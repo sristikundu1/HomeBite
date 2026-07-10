@@ -6,8 +6,9 @@ import { ChefHat, ImagePlus, Loader2, Sparkles, UtensilsCrossed } from 'lucide-r
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import { useAuth } from '../../providers/AuthProvider';
 import { createFood } from '../../services/foodsApi';
+import { CATEGORY_NAMES } from '../../data/categoryCatalog';
 
-const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snacks', 'Beverages'];
+const categories = CATEGORY_NAMES;
 const spiceLevels = ['None','Mild', 'Medium', 'Hot', 'Extra Hot'];
 
 const inputClass =
@@ -291,4 +292,3 @@ function NumberField({ label, name, suffix, register, error, min, step = '1', re
     </Field>
   );
 }
-

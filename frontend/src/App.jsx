@@ -32,6 +32,7 @@ import ChefEditFood from './pages/dashboard/ChefEditFood';
 import Foods from './pages/Foods';
 import FoodDetails from './pages/FoodDetails';
 import Wishlist from './pages/dashboard/Wishlist';
+import Cart from './pages/dashboard/Cart';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
           <Route path="profile" element={<DashboardProfile />} />
           <Route path="settings" element={<DashboardSettings />} />
           <Route path="wishlist" element={<Wishlist />} />
+          <Route path="cart" element={<Cart />} />
           <Route
             path="chef/add-food"
             element={

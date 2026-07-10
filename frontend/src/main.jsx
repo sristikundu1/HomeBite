@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { AuthProvider } from './providers/AuthProvider.jsx';
 import { ThemeProvider } from './providers/ThemeProvider.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
+import { CartProvider } from './context/CartContext.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,19 +13,21 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ThemeProvider>
       <AuthProvider>
         <WishlistProvider>
-          <App />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: 'var(--bg-surface)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                boxShadow: 'var(--shadow-soft)'
-              }
-            }}
-          />
+          <CartProvider>
+            <App />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  boxShadow: 'var(--shadow-soft)'
+                }
+              }}
+            />
+          </CartProvider>
         </WishlistProvider>
       </AuthProvider>
     </ThemeProvider>

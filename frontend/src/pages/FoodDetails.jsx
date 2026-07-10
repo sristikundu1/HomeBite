@@ -14,8 +14,12 @@ import {
   UtensilsCrossed
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getFood, getFoods } from '../services/foodsApi';
+import useWishlist from '../hooks/useWishlist';
+import useCart from '../hooks/useCart';
+import { useAuth } from '../providers/AuthProvider';
 
 function foodId(food) {
   return food?._id?.$oid || food?._id;
@@ -31,10 +35,16 @@ function formatPrice(value) {
 
 export default function FoodDetails() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const { toggleWishlist, isWishlisted } = useWishlist();
   const [food, setFood] = useState(null);
   const [allFoods, setAllFoods] = useState([]);
   const [selectedImage, setSelectedImage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -86,6 +96,26 @@ export default function FoodDetails() {
 
   const images = [...new Set([food.thumbnail, ...(food.gallery || [])].filter(Boolean))];
   const discounted = food.discountPrice !== null && food.discountPrice !== undefined;
+  const wishlisted = isWishlisted(foodId(food));
+
+  function handleWishlist() {
+    toggleWishlist(foodId(food));
+    toast.success(wishlisted ? 'Removed from wishlist.' : 'Added to wishlist.');
+  }
+
+  async function handleAddToCart() {
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addToCart(food, 1);
+    } finally {
+      setIsAdding(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[var(--bg-page)] pb-24 pt-28 sm:pt-32">
@@ -126,8 +156,8 @@ export default function FoodDetails() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <button type="button" disabled={!food.isAvailable} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"><ShoppingBag className="h-5 w-5" />Add to Cart</button>
-              <button type="button" className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-7 py-4 text-sm font-semibold text-[var(--text-primary)] transition hover:border-rose-500/30 hover:bg-rose-500/5 hover:text-rose-500"><Heart className="h-5 w-5" />Wishlist</button>
+              <motion.button type="button" onClick={handleAddToCart} disabled={!food.isAvailable || isAdding} aria-busy={isAdding} whileHover={!isAdding && food.isAvailable ? { y: -2 } : {}} whileTap={!isAdding && food.isAvailable ? { scale: 0.98 } : {}} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-7 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"><ShoppingBag className="h-5 w-5" />{isAdding ? 'Adding...' : 'Add to Cart'}</motion.button>
+              <button type="button" onClick={handleWishlist} aria-pressed={wishlisted} aria-label={`${wishlisted ? 'Remove' : 'Add'} ${food.title} ${wishlisted ? 'from' : 'to'} wishlist`} className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-7 py-4 text-sm font-semibold text-[var(--text-primary)] transition hover:border-rose-500/30 hover:bg-rose-500/5 hover:text-rose-500"><Heart className={`h-5 w-5 ${wishlisted ? 'fill-current' : ''}`} />Wishlist</button>
             </div>
           </motion.section>
         </div>

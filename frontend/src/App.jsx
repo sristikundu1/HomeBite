@@ -33,6 +33,7 @@ import Foods from './pages/Foods';
 import FoodDetails from './pages/FoodDetails';
 import Wishlist from './pages/dashboard/Wishlist';
 import Cart from './pages/dashboard/Cart';
+import Checkout from './pages/Checkout';
 
 function App() {
   return (
@@ -65,6 +66,14 @@ function App() {
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/foods" element={<Foods />} />
           <Route path="/foods/:id" element={<FoodDetails />} />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route
           path="/dashboard"

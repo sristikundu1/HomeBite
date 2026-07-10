@@ -8,6 +8,10 @@ export function getOrder(id) {
   return api.get(`/orders/${id}`);
 }
 
+export function getOrders() {
+  return api.get('/orders');
+}
+
 export function getChefOrders(email) {
   return api.get(`/orders/chef/${encodeURIComponent(email)}`);
 }

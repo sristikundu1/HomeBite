@@ -13,8 +13,9 @@ function conversations() { return getDB().collection('conversations'); }
 function messages() { return getDB().collection('messages'); }
 
 function allowedPair(firstRole, secondRole) {
+  if (firstRole === secondRole) return false;
   const roles = new Set([firstRole, secondRole]);
-  return roles.has('customer') && (roles.has('chef') || roles.has('admin'));
+  return roles.has('admin') || (roles.has('customer') && roles.has('chef'));
 }
 
 function publicUser(user) {

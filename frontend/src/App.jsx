@@ -52,6 +52,8 @@ import CustomerReviews from './pages/dashboard/CustomerReviews';
 import AdminOverview from './pages/dashboard/AdminOverview';
 import AdminUsers from './pages/dashboard/AdminUsers';
 import AdminFoods from './pages/dashboard/AdminFoods';
+import AdminOrders from './pages/dashboard/AdminOrders';
+import AdminMessages from './pages/dashboard/AdminMessages';
 
 function App() {
   return (
@@ -128,6 +130,22 @@ function App() {
             element={
               <AdminRoute>
                 <AdminFoods />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/orders"
+            element={
+              <AdminRoute>
+                <AdminOrders />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/messages"
+            element={
+              <AdminRoute>
+                <AdminMessages />
               </AdminRoute>
             }
           />

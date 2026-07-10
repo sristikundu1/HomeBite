@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import usersRoutes from './routes/users.routes.js';
 import chefApplicationsRoutes from './routes/chefApplications.routes.js';
+import foodsRoutes from './routes/foods.routes.js';
 
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(express.json());
 
 app.use('/users', usersRoutes);
 app.use('/chef-applications', chefApplicationsRoutes);
+app.use('/foods', foodsRoutes);
 
 app.get('/', (req, res) => {
   res.json({

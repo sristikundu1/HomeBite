@@ -25,6 +25,13 @@ import DashboardSettings from './pages/dashboard/Settings';
 import DashboardNotFound from './pages/dashboard/NotFound';
 import AdminChefVerification from './pages/dashboard/AdminChefVerification';
 import AdminRoute from './routes/AdminRoute';
+import ChefRoute from './routes/ChefRoute';
+import ChefAddFood from './pages/dashboard/ChefAddFood';
+import ChefManageFoods from './pages/dashboard/ChefManageFoods';
+import ChefEditFood from './pages/dashboard/ChefEditFood';
+import Foods from './pages/Foods';
+import FoodDetails from './pages/FoodDetails';
+import Wishlist from './pages/dashboard/Wishlist';
 
 function App() {
   return (
@@ -55,6 +62,8 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
+          <Route path="/foods" element={<Foods />} />
+          <Route path="/foods/:id" element={<FoodDetails />} />
         </Route>
         <Route
           path="/dashboard"
@@ -69,6 +78,31 @@ function App() {
           <Route index element={<DashboardHome />} />
           <Route path="profile" element={<DashboardProfile />} />
           <Route path="settings" element={<DashboardSettings />} />
+          <Route path="wishlist" element={<Wishlist />} />
+          <Route
+            path="chef/add-food"
+            element={
+              <ChefRoute>
+                <ChefAddFood />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/manage-foods"
+            element={
+              <ChefRoute>
+                <ChefManageFoods />
+              </ChefRoute>
+            }
+          />
+          <Route
+            path="chef/edit-food/:id"
+            element={
+              <ChefRoute>
+                <ChefEditFood />
+              </ChefRoute>
+            }
+          />
           <Route
             path="admin/chef-verification"
             element={

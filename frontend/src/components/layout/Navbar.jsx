@@ -7,7 +7,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import UserMenu from '../navbar/UserMenu';
 
 const navLinks = [
-  { href: '/explore', label: 'Explore Meals' },
+  { href: '/foods', label: 'Explore Meals' },
   { href: '/cook', label: 'Become a Cook' },
   { href: '/about', label: 'About' },
   { href: '/pricing', label: 'Pricing' },

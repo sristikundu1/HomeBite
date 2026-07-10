@@ -1,21 +1,25 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Compass, ShoppingBag, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const steps = [
   {
     title: 'Browse Meals',
     description: 'Explore premium meals from trusted local cooks in your neighborhood.',
-    icon: Compass
+    icon: Compass,
+    href: '/how-it-works#browse'
   },
   {
     title: 'Place Order',
     description: 'Choose your favorites, set your time, and secure your meal in seconds.',
-    icon: ShoppingBag
+    icon: ShoppingBag,
+    href: '/how-it-works#order'
   },
   {
     title: 'Enjoy Homemade Food',
     description: 'Receive a warm, freshly prepared meal and enjoy the comfort of home.',
-    icon: Sparkles
+    icon: Sparkles,
+    href: '/how-it-works#delivery'
   }
 ];
 
@@ -66,10 +70,10 @@ function HowItWorks() {
                   <h3 className="mt-8 text-2xl font-semibold text-[var(--text-primary)]">{step.title}</h3>
                   <p className="mt-4 text-base leading-8 text-[var(--text-secondary)]">{step.description}</p>
 
-                  <div className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[var(--accent)]">
+                  <Link to={step.href} className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-soft)]">
                     Learn more
                     <ArrowRight size={16} />
-                  </div>
+                  </Link>
                 </motion.article>
               );
             })}

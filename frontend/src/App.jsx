@@ -57,6 +57,11 @@ import AdminMessages from './pages/dashboard/AdminMessages';
 import AdminNotifications from './pages/dashboard/AdminNotifications';
 import AdminCoupons from './pages/dashboard/AdminCoupons';
 import AdminGiftCards from './pages/dashboard/AdminGiftCards';
+import AdminPlatformSettings from './pages/dashboard/AdminPlatformSettings';
+import AdminProfile from './pages/dashboard/AdminProfile';
+import AdminSettings from './pages/dashboard/AdminSettings';
+import AdminReports from './pages/dashboard/AdminReports';
+import AdminAnalytics from './pages/dashboard/AdminAnalytics';
 
 function App() {
   return (
@@ -121,6 +126,14 @@ function App() {
             }
           />
           <Route
+            path="admin/analytics"
+            element={
+              <AdminRoute>
+                <AdminAnalytics />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="admin/users"
             element={
               <AdminRoute>
@@ -173,6 +186,38 @@ function App() {
             element={
               <AdminRoute>
                 <AdminGiftCards />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/platform-settings"
+            element={
+              <AdminRoute>
+                <AdminPlatformSettings />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/profile"
+            element={
+              <AdminRoute>
+                <AdminProfile />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/settings"
+            element={
+              <AdminRoute>
+                <AdminSettings />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/reports"
+            element={
+              <AdminRoute>
+                <AdminReports />
               </AdminRoute>
             }
           />

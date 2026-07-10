@@ -2,8 +2,8 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000' });
 
-export function getAdminOverview() {
-  return api.get('/admin/overview');
+export function getAdminOverview(email) {
+  return api.get('/admin/overview', { params: email ? { email } : undefined });
 }
 
 export function getManagedUsers() {
@@ -40,3 +40,10 @@ export const getGiftCards = () => api.get('/admin/gift-cards');
 export const createGiftCard = (giftCard) => api.post('/admin/gift-cards', giftCard);
 export const deactivateGiftCard = (id) => api.patch(`/admin/gift-cards/${id}/deactivate`);
 export const deleteGiftCard = (id) => api.delete(`/admin/gift-cards/${id}`);
+
+export const getPlatformSettings = () => api.get('/admin/platform-settings');
+export const savePlatformSettings = (settings) => api.put('/admin/platform-settings', settings);
+export const updateAdminProfile = (email, profile) => api.patch(`/admin/profile/${encodeURIComponent(email)}`, profile);
+export const saveAdminNotificationPreferences = (email, preferences) => api.patch(`/admin/preferences/${encodeURIComponent(email)}`, preferences);
+export const getReportBootstrap = () => api.get('/admin/reports/bootstrap');
+export const generateAdminReport = (payload) => api.post('/admin/reports/generate', payload);

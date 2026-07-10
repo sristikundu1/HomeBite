@@ -23,6 +23,9 @@ export async function getAdminOverview(req, res) {
     const reviews = db.collection('reviews');
     const applications = db.collection('chefApplications');
     const activeUsers = { status: { $nin: ['deleted', 'inactive'] } };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const adminEmail = String(req.query.email || '').trim().toLowerCase();
 
     const [
       totalUsers,
@@ -38,7 +41,11 @@ export async function getAdminOverview(req, res) {
       categoryRows,
       latestOrders,
       latestUsers,
-      latestReviews
+      latestReviews,
+      todayOrders,
+      todayRevenueRows,
+      newUsersToday,
+      unreadMessages
     ] = await Promise.all([
       users.countDocuments(activeUsers),
       users.countDocuments({ ...activeUsers, role: 'customer' }),
@@ -65,6 +72,10 @@ export async function getAdminOverview(req, res) {
       orders.find().sort({ orderDate: -1 }).limit(5).toArray(),
       users.find(activeUsers, { projection: { name: 1, email: 1, photo: 1, role: 1, chefStatus: 1, createdAt: 1 } }).sort({ createdAt: -1 }).limit(5).toArray(),
       reviews.find().sort({ date: -1 }).limit(5).toArray()
+      ,orders.countDocuments({ orderDate: { $gte: today } })
+      ,orders.aggregate([{ $match: { paymentStatus: 'paid', orderDate: { $gte: today } } }, { $group: { _id: null, total: { $sum: '$total' } } }]).toArray()
+      ,users.countDocuments({ ...activeUsers, createdAt: { $gte: today } })
+      ,adminEmail ? db.collection('messages').countDocuments({ receiverEmail: adminEmail, readAt: null }) : 0
     ]);
 
     const totalRevenue = revenueRows.reduce((sum, row) => sum + Number(row.revenue || 0), 0);
@@ -75,7 +86,12 @@ export async function getAdminOverview(req, res) {
     const ordersById = new Map(reviewOrders.map((order) => [order._id.toString(), order]));
 
     return sendSuccess(res, 200, 'Admin overview retrieved successfully', {
-      stats: { totalUsers, customers, chefs, pendingApplications, totalFoods, totalOrders, totalRevenue, activeOrders },
+      stats: {
+        totalUsers, customers, chefs, pendingApplications, totalFoods, totalOrders, totalRevenue, activeOrders,
+        todayOrders, todayRevenue: Number(todayRevenueRows[0]?.total || 0), newUsersToday,
+        ordersWaitingForChef: statusRows.find((row) => row._id === 'pending')?.count || 0,
+        unreadMessages
+      },
       charts: {
         monthlyRevenue: monthRows(revenueRows, 'revenue'),
         ordersByStatus: statusRows.map((row) => ({ status: row._id || 'unknown', count: row.count })),
@@ -89,6 +105,12 @@ export async function getAdminOverview(req, res) {
           const order = ordersById.get(review.orderId?.toString());
           return { ...review, food: order?.foods?.[0] || null, chef: Array.isArray(order?.chef) ? order.chef[0] : order?.chef || null };
         })
+      },
+      health: {
+        backend: true,
+        mongodb: true,
+        stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+        lastSync: new Date()
       }
     });
   } catch (error) {

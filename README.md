@@ -13,6 +13,22 @@ A modern full-stack marketplace where customers can discover fresh homemade meal
 
 ---
 
+## 🔐 Admin  Login
+
+To explore the Admin Dashboard, use the following credentials:
+
+**Email**
+```text
+admin@gmail.com
+```
+
+**Password**
+```text
+Admin@1234
+```
+
+> **Note:** These are demo account created for evaluation purposes only.Please do not modify or delete data while testing.
+
 # 📖 Table of Contents
 
 - Overview

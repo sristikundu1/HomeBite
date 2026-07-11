@@ -52,6 +52,12 @@ export async function syncAdminNotificationHistory(receiverEmail) {
   );
   if (!admin) return;
 
+  const existingTypeRows = await db.collection('notifications')
+    .find({ receiverEmail: email }, { projection: { type: 1 } })
+    .toArray();
+  const existingTypes = new Set(existingTypeRows.map((notification) => notification.type));
+  if (['user', 'chef-application', 'order', 'review', 'message'].every((type) => existingTypes.has(type))) return;
+
   const [users, applications, orders, reviews, messages] = await Promise.all([
     db.collection('users').find(
       { role: { $ne: 'admin' }, status: { $ne: 'deleted' } },
@@ -103,7 +109,7 @@ export async function syncAdminNotificationHistory(receiverEmail) {
   ];
 
   await Promise.all(candidates.map((notification) => db.collection('notifications').updateOne(
-    { receiverEmail: email, type: notification.type, title: notification.title, message: notification.message },
+    { receiverEmail: email, type: notification.type, message: notification.message },
     { $setOnInsert: { ...notification, receiverEmail: email, isRead: false } },
     { upsert: true }
   )));

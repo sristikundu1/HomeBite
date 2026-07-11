@@ -66,6 +66,8 @@ import AdminProfile from './pages/dashboard/AdminProfile';
 import AdminSettings from './pages/dashboard/AdminSettings';
 import AdminReports from './pages/dashboard/AdminReports';
 import AdminAnalytics from './pages/dashboard/AdminAnalytics';
+import Chefs from './pages/Chefs';
+import ChefDetails from './pages/ChefDetails';
 
 function App() {
   return (
@@ -102,6 +104,8 @@ function App() {
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/:slug" element={<BlogDetails />} />
           <Route path="/foods/:id" element={<FoodDetails />} />
+          <Route path="/chefs" element={<Chefs />} />
+          <Route path="/chefs/:id" element={<ChefDetails />} />
         </Route>
         <Route
           path="/dashboard"

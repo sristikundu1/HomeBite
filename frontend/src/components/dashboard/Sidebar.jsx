@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { ChefHat } from 'lucide-react';
 import { getSidebarMenu } from '../../data/sidebarMenus';
 import SidebarItem from './SidebarItem';
 import { Link } from 'react-router-dom';
+import HomeBiteLogo from '../brand/HomeBiteLogo';
 
 export default function Sidebar({ role = 'customer', chefStatus = 'none', collapsed = false, onItemClick, mobile = false }) {
   const menuItems = getSidebarMenu(role, chefStatus);
@@ -19,9 +19,7 @@ export default function Sidebar({ role = 'customer', chefStatus = 'none', collap
         className={`flex items-center gap-3 px-2 transition-opacity hover:opacity-90 ${collapsed ? 'justify-center' : ''
           }`}
       >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-400/20">
-          <ChefHat size={22} />
-        </span>
+        <HomeBiteLogo showWordmark={false} iconClassName="h-12 w-12" />
 
         {!collapsed && (
           <div className="min-w-0">

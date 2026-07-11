@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createFood,
   getFoodCategories,
+  getFeaturedFoods,
   getFoodById,
   getFoods,
   getFoodsByChef,
@@ -16,6 +17,7 @@ const router = express.Router();
 router.post('/', createFood);
 router.get('/', getFoods);
 router.get('/categories', getFoodCategories);
+router.get('/featured', getFeaturedFoods);
 router.get('/chef/:email', getFoodsByChef);
 router.get('/:id', getFoodById);
 router.put('/:id', updateFood);

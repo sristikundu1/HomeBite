@@ -16,6 +16,10 @@ export function getFoodCategories() {
   return api.get('/foods/categories');
 }
 
+export function getFeaturedFoods() {
+  return api.get('/foods/featured');
+}
+
 export function getChefFoods(email) {
   return api.get(`/foods/chef/${encodeURIComponent(email)}`);
 }

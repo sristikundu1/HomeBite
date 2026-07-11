@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, Send } from 'lucide-react';
+import HomeBiteLogo from '../brand/HomeBiteLogo';
 
 const companyLinks = [
   { name: "About", path: "/about" },
@@ -29,12 +30,7 @@ function Footer() {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_1.1fr]">
           <div className="max-w-sm">
-            <div className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-              <span className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-400/20">
-                HB
-              </span>
-              HomeBite
-            </div>
+            <HomeBiteLogo iconClassName="h-12 w-12" wordmarkClassName="text-lg" />
             <p className="mt-6 text-base leading-8 text-[var(--text-secondary)]">
               Premium local meals from trusted home chefs, delivered with warmth, care, and modern convenience.
             </p>

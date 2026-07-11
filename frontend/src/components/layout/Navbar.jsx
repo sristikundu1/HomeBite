@@ -6,6 +6,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 import UserMenu from '../navbar/UserMenu';
 import NotificationDropdown from '../notifications/NotificationDropdown';
+import HomeBiteLogo from '../brand/HomeBiteLogo';
 
 const navLinks = [
   { href: '/foods', label: 'Explore Meals' },
@@ -51,10 +52,7 @@ function Navbar() {
          href="/"
          className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight transition text-[var(--text-primary)]"
         >
-         <span className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-400/20">
-           HB
-         </span>
-         <span className="hidden sm:inline">HomeBite</span>
+         <HomeBiteLogo className="gap-3" iconClassName="h-12 w-12" wordmarkClassName="hidden text-lg sm:inline" />
         </a>
 
         <nav className="hidden items-center gap-10 lg:flex">

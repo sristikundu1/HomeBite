@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Apple, Play } from 'lucide-react';
+import HomeBiteLogo from '../brand/HomeBiteLogo';
 
 function AppDownload() {
   return (
@@ -55,9 +56,7 @@ function AppDownload() {
                         <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--text-secondary)]">HomeBite</p>
                         <h3 className="text-sm font-semibold text-[var(--text-primary)]">Welcome back</h3>
                       </div>
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                        <span className="text-sm font-semibold">HB</span>
-                      </div>
+                      <HomeBiteLogo showWordmark={false} iconClassName="h-8 w-8" />
                     </div>
 
                     <div className="flex-1 space-y-4 bg-[linear-gradient(135deg,rgba(249,115,22,0.12),rgba(236,72,153,0.08))] p-4">

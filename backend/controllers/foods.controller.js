@@ -64,6 +64,40 @@ export async function getFoods(req, res) {
   }
 }
 
+export async function getFeaturedFoods(req, res) {
+  try {
+    const foods = await foodsCollection().aggregate([
+      { $match: { status: 'active', isAvailable: true } },
+      { $lookup: { from: 'users', localField: 'chefId', foreignField: '_id', as: 'chef' } },
+      { $unwind: '$chef' },
+      { $match: { 'chef.role': 'chef', 'chef.chefStatus': 'approved', 'chef.status': { $nin: ['deleted', 'inactive', 'suspended'] } } },
+      { $lookup: {
+        from: 'chefApplications',
+        let: { chefId: '$chef._id', chefEmail: '$chef.email' },
+        pipeline: [
+          { $match: { $expr: { $or: [{ $eq: ['$userId', '$$chefId'] }, { $eq: ['$email', '$$chefEmail'] }] } } },
+          { $sort: { submittedAt: -1 } },
+          { $limit: 1 }
+        ],
+        as: 'chefApplication'
+      } },
+      { $unwind: { path: '$chefApplication', preserveNullAndEmptyArrays: true } },
+      { $sort: { rating: -1, orderCount: -1, createdAt: -1 } },
+      { $limit: 3 },
+      { $addFields: {
+        chefVerificationStatus: '$chef.chefStatus',
+        chefCity: { $ifNull: ['$chef.chefProfile.city', { $ifNull: ['$chefApplication.location', ''] }] },
+        chefName: { $ifNull: ['$chef.chefProfile.fullName', '$chefName'] },
+        chefPhoto: { $ifNull: ['$chef.chefProfile.profilePhoto', '$chefPhoto'] }
+      } },
+      { $project: { chef: 0, chefApplication: 0 } }
+    ]).toArray();
+    return sendSuccess(res, 200, 'Featured foods retrieved successfully', foods);
+  } catch (error) {
+    return handleError(res, error, 'Get featured foods');
+  }
+}
+
 export async function getFoodById(req, res) {
   try {
     const food = await findFood(req.params.id);

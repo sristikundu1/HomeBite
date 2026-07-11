@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000' });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'https://backend-kappa-woad-55.vercel.app/' });
 
 export function getAdminOverview(email) {
   return api.get('/admin/overview', { params: email ? { email } : undefined });

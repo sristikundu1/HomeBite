@@ -18,7 +18,8 @@ const configuredClientOrigins = String(process.env.CLIENT_URL || '')
   .filter(Boolean);
 const allowedClientOrigins = new Set([
   ...configuredClientOrigins,
-  'http://localhost:3000',
+  'https://homebite-15925.web.app',
+  'https://homebite-15925.firebaseapp.com',
   'http://127.0.0.1:3000',
   'http://localhost:5173',
   'http://127.0.0.1:5173'

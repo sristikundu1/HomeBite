@@ -12,7 +12,7 @@ const navLinks = [
   { href: '/cook', label: 'Become a Cook' },
   { href: '/about', label: 'About' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/blog', label: 'Blog' },
+  { href: '/blogs', label: 'Blog' },
   { href: '/contact', label: 'Contact' }
 ];
 

@@ -17,6 +17,8 @@ import Cookies from './pages/Cookies';
 import BecomeChef from './pages/BecomeChef';
 import CategoriesPage from './pages/Categories';
 import HowItWorksPage from './pages/HowItWorksPage';
+import Blogs from './pages/Blogs';
+import BlogDetails from './pages/BlogDetails';
 import ApplicationStatus from './pages/ApplicationStatus';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -97,6 +99,8 @@ function App() {
           <Route path="/foods" element={<Foods />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blogs/:slug" element={<BlogDetails />} />
           <Route path="/foods/:id" element={<FoodDetails />} />
         </Route>
         <Route

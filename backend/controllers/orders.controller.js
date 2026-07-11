@@ -3,7 +3,7 @@ import { getDB } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 import { getStripe } from '../utils/stripe.js';
 import { getSocketServer, orderRoom } from '../config/socket.js';
-import { notifyRecipients } from '../services/notifications.service.js';
+import { notifyAdmins, notifyRecipients } from '../services/notifications.service.js';
 
 const ORDER_STATUSES = ['pending', 'accepted', 'rejected', 'preparing', 'ready', 'out-for-delivery', 'delivered'];
 let orderIndexPromise;
@@ -163,6 +163,11 @@ export async function createOrder(req, res) {
         message: `${order.customer.name || 'A customer'} placed a new order.`
       }
     );
+    await notifyAdmins({
+      type: 'order',
+      title: 'New platform order',
+      message: `${order.customer.name || 'A customer'} placed order ${result.insertedId.toString().slice(-8).toUpperCase()}.`
+    });
     return sendSuccess(res, 201, 'Order created successfully', { ...order, _id: result.insertedId });
   } catch (error) {
     return handleError(res, error, 'Create order');
@@ -257,6 +262,11 @@ export async function updateOrderStatus(req, res) {
         message: `${chefNames || 'Your chef'} updated your order to ${status.replaceAll('-', ' ')}.`
       }
     );
+    await notifyAdmins({
+      type: 'order',
+      title: statusTitles[status] || 'Order Status Updated',
+      message: `Order ${_id.toString().slice(-8).toUpperCase()} changed to ${status.replaceAll('-', ' ')}.`
+    });
 
     return sendSuccess(res, 200, 'Order status updated successfully', order);
   } catch (error) {

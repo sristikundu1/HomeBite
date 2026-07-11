@@ -37,10 +37,16 @@ export function NotificationProvider({ children }) {
       return () => { active = false; };
     }
 
+    setNotifications((current) => current.filter(
+      (notification) => String(notification.receiverEmail || '').trim().toLowerCase() === email
+    ));
     setLoading(true);
     getUserNotifications(email)
       .then((response) => {
-        if (active) setNotifications((current) => mergeNotifications(response.data.data || [], current));
+        if (active) setNotifications((current) => mergeNotifications(
+          response.data.data || [],
+          current.filter((notification) => String(notification.receiverEmail || '').trim().toLowerCase() === email)
+        ));
       })
       .catch(() => {
         if (active) setNotifications([]);

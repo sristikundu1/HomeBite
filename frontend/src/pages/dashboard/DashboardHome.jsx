@@ -1,11 +1,22 @@
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
-import EmptyState from '../../components/dashboard/EmptyState';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../providers/AuthProvider';
+
+const overviewRoutes = {
+  admin: '/dashboard/admin',
+  chef: '/dashboard/chef',
+  customer: '/dashboard/customer'
+};
 
 export default function DashboardHome() {
-  return (
-    <div className="space-y-8">
-      <DashboardHeader title="Overview" description="Your HomeBite dashboard overview will appear here as features are added." />
-      <EmptyState title="Overview Coming Soon" description="Orders, activity, and role-specific insights will be connected in a future step." />
-    </div>
-  );
+  const { dbUser, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Opening dashboard">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
+      </div>
+    );
+  }
+
+  return <Navigate to={overviewRoutes[dbUser?.role] || '/'} replace />;
 }

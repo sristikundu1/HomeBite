@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db.js';
-import { notifyRecipients } from '../services/notifications.service.js';
+import { notifyAdmins, notifyRecipients } from '../services/notifications.service.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 
 let reviewIndexPromise;
@@ -128,6 +128,11 @@ export async function createReview(req, res) {
       type: 'review',
       title: 'New customer review',
       message: `${order.customer?.name || 'A customer'} left a ${rating}-star review.`
+    });
+    await notifyAdmins({
+      type: 'review',
+      title: 'New platform review',
+      message: `${order.customer?.name || 'A customer'} submitted a ${rating}-star review.`
     });
 
     return sendSuccess(res, 201, 'Review submitted successfully', { ...review, _id: result.insertedId });

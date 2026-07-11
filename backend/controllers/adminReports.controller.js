@@ -78,13 +78,26 @@ async function generateRows(db, type, filters) {
 export async function getReportBootstrap(req, res) {
   try {
     const db = getDB();
-    const [chefsList, customers, categories, recentReports] = await Promise.all([
+    const results = await Promise.allSettled([
       db.collection('users').find({ role: 'chef', status: { $ne: 'deleted' } }, { projection: { name: 1, email: 1, chefProfile: 1 } }).sort({ name: 1 }).toArray(),
       db.collection('users').find({ role: 'customer', status: { $ne: 'deleted' } }, { projection: { name: 1, email: 1 } }).sort({ name: 1 }).toArray(),
-      db.collection('foods').distinct('category', { status: { $ne: 'deleted' } }),
+      db.collection('foods').aggregate([
+        { $match: { status: { $ne: 'deleted' }, category: { $type: 'string', $ne: '' } } },
+        { $group: { _id: '$category' } },
+        { $sort: { _id: 1 } }
+      ]).toArray(),
       db.collection('reportRuns').find().sort({ generatedAt: -1 }).limit(8).toArray()
     ]);
-    return sendSuccess(res, 200, 'Report options retrieved successfully', { chefs: chefsList.map((chef) => ({ email: chef.email, name: chef.chefProfile?.kitchenName || chef.name || chef.email })), customers: customers.map((customer) => ({ email: customer.email, name: customer.name || customer.email })), categories: categories.filter(Boolean).sort(), recentReports });
+    const [chefsList, customers, categoryRows, recentReports] = results.map((result) => result.status === 'fulfilled' ? result.value : []);
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') console.warn(`Report bootstrap query ${index + 1} failed:`, result.reason?.message);
+    });
+    return sendSuccess(res, 200, 'Report options retrieved successfully', {
+      chefs: chefsList.map((chef) => ({ email: chef.email, name: chef.chefProfile?.kitchenName || chef.name || chef.email })),
+      customers: customers.map((customer) => ({ email: customer.email, name: customer.name || customer.email })),
+      categories: categoryRows.map((row) => row._id).filter(Boolean).map(String).sort((a, b) => a.localeCompare(b)),
+      recentReports
+    });
   } catch (error) { console.error('Get report bootstrap failed:', error.message); return sendError(res, 500, 'Failed to load report options'); }
 }
 

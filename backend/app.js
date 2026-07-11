@@ -13,6 +13,7 @@ import aiAssistantRoutes from './routes/aiAssistant.routes.js';
 import chefProfileRoutes from './routes/chefProfile.routes.js';
 import chefSettingsRoutes from './routes/chefSettings.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import blogsRoutes from './routes/blogs.routes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/ai-assistant', aiAssistantRoutes);
 app.use('/chef/profile', chefProfileRoutes);
 app.use('/chef', chefSettingsRoutes);
 app.use('/admin', adminRoutes);
+app.use('/blogs', blogsRoutes);
 
 app.get('/', (req, res) => {
   res.json({

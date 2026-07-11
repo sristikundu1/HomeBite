@@ -3,7 +3,8 @@ import { getDB } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 import {
   createNotificationDocument,
-  normalizeNotificationEmail
+  normalizeNotificationEmail,
+  syncAdminNotificationHistory
 } from '../services/notifications.service.js';
 
 function notificationId(id) {
@@ -33,6 +34,8 @@ export async function getNotifications(req, res) {
   try {
     const receiverEmail = normalizeNotificationEmail(req.params.email);
     if (!receiverEmail) return sendError(res, 400, 'User email is required');
+
+    await syncAdminNotificationHistory(receiverEmail);
 
     const notifications = await notificationsCollection()
       .find({ receiverEmail })
@@ -76,4 +79,3 @@ export async function deleteNotification(req, res) {
     return handleError(res, error, 'Delete notification');
   }
 }
-

@@ -1,7 +1,7 @@
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { motion } from 'framer-motion';
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Download, FileBarChart, FileText, Loader2, Printer, RefreshCw, Search, SlidersHorizontal, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,7 +12,7 @@ import { generateAdminReport, getReportBootstrap } from '../../services/adminApi
 
 const label = (value) => String(value || '').replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const reportTypes = [['orders','Orders Report'],['revenue','Revenue Report'],['customers','Customer Report'],['chefs','Chef Report'],['foods','Foods Report'],['reviews','Reviews Report'],['payments','Payments Report']].map(([value, label]) => ({ value, label }));
-const statuses = ['pending','accepted','preparing','ready','out-for-delivery','delivered','cancelled','active','inactive','approved','rejected'].map((value) => ({ value, label: label(value) }));
+const statuses = ['pending','accepted','preparing','ready','out-for-delivery','delivered','rejected','cancelled','active','archived','inactive','approved'].map((value) => ({ value, label: label(value) }));
 const paymentStatuses = ['paid','pending','failed','refunded'].map((value) => ({ value, label: label(value) }));
 const roleOptions = ['customer','chef','admin'].map((value) => ({ value, label: label(value) }));
 const defaults = { reportType: 'orders', startDate: null, endDate: null, status: '', role: '', category: '', chef: '', customer: '', paymentStatus: '', search: '' };
@@ -40,7 +40,20 @@ export default function AdminReports() {
   const [generated, setGenerated] = useState(false);
   const { control, register, handleSubmit, reset, watch, formState: { isSubmitting } } = useForm({ defaultValues: defaults });
 
-  useEffect(() => { let active = true; setLoading(true); getReportBootstrap().then((response) => { if (active) setBootstrap(response.data.data || {}); }).catch((error) => { if (active) setLoadError(error.response?.data?.message || 'Unable to load report tools.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
+  const loadBootstrap = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const response = await getReportBootstrap();
+      setBootstrap(response.data.data || { chefs: [], customers: [], categories: [], recentReports: [] });
+    } catch (error) {
+      setLoadError(error.response?.data?.message || 'Unable to load optional report filters. You can still generate reports.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadBootstrap(); }, [loadBootstrap]);
 
   async function generate(values) {
     try {
@@ -57,11 +70,11 @@ export default function AdminReports() {
   if (loading) return <ReportsSkeleton/>;
   return <div className="mx-auto max-w-[1600px] space-y-8">
     <DashboardHeader title="Reports" description="Generate historical operational and financial reports across HomeBite."/>
-    {loadError && <div role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-500">{loadError}</div>}
+    {loadError && <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 text-sm text-amber-600 sm:flex-row sm:items-center sm:justify-between"><span>{loadError}</span><button type="button" onClick={loadBootstrap} className="inline-flex items-center justify-center gap-2 rounded-full border border-amber-500/30 px-4 py-2 font-semibold"><RefreshCw className="h-4 w-4"/>Retry</button></div>}
     <motion.form onSubmit={handleSubmit(generate)} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-lg shadow-black/5 sm:p-6" aria-label="Report filters">
       <div className="mb-6 flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><SlidersHorizontal className="h-5 w-5"/></span><div><h2 className="text-lg font-semibold text-[var(--text-primary)]">Filter Panel</h2><p className="mt-1 text-xs text-[var(--text-muted)]">Select a report type and narrow the historical dataset.</p></div></div>
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><SelectField label="Report Type" name="reportType" control={control} options={reportTypes} required/><DateField label="Start Date" name="startDate" control={control} maxDate={watch('endDate') || new Date()}/><DateField label="End Date" name="endDate" control={control} minDate={watch('startDate')} maxDate={new Date()}/><SelectField label="Status" name="status" control={control} options={statuses} clearable/><SelectField label="Role" name="role" control={control} options={roleOptions} clearable/><SelectField label="Category" name="category" control={control} options={(bootstrap.categories || []).map((item) => ({ value: item, label: item }))} clearable/><SelectField label="Chef" name="chef" control={control} options={(bootstrap.chefs || []).map((item) => ({ value: item.email, label: item.name }))} clearable/><SelectField label="Customer" name="customer" control={control} options={(bootstrap.customers || []).map((item) => ({ value: item.email, label: item.name }))} clearable/><SelectField label="Payment Status" name="paymentStatus" control={control} options={paymentStatuses} clearable/><label className="block sm:col-span-2 xl:col-span-3"><span className="text-sm font-semibold text-[var(--text-secondary)]">Search</span><span className="mt-2 flex h-[50px] items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-muted)] px-4"><Search className="h-4 w-4 text-[var(--text-muted)]"/><input {...register('search')} placeholder="Search IDs, names, email, food, or transaction" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none"/></span></label></div>
-      <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-5 sm:flex-row sm:justify-end"><button type="button" onClick={() => { reset(defaults); setRows([]); setGenerated(false); }} className="rounded-full border border-[var(--border)] px-5 py-3 text-sm font-semibold text-[var(--text-secondary)]">Reset</button><motion.button whileHover={!isSubmitting ? { y: -2 } : {}} whileTap={!isSubmitting ? { scale: 0.98 } : {}} type="submit" disabled={isSubmitting || Boolean(loadError)} className="inline-flex min-w-44 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 disabled:opacity-50">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : <FileBarChart className="h-4 w-4"/>}{isSubmitting ? 'Generating...' : 'Generate Report'}</motion.button></div>
+      <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-5 sm:flex-row sm:justify-end"><button type="button" onClick={() => { reset(defaults); setRows([]); setGenerated(false); }} className="rounded-full border border-[var(--border)] px-5 py-3 text-sm font-semibold text-[var(--text-secondary)]">Reset</button><motion.button whileHover={!isSubmitting ? { y: -2 } : {}} whileTap={!isSubmitting ? { scale: 0.98 } : {}} type="submit" disabled={isSubmitting} className="inline-flex min-w-44 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 disabled:opacity-50">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : <FileBarChart className="h-4 w-4"/>}{isSubmitting ? 'Generating...' : 'Generate Report'}</motion.button></div>
     </motion.form>
     <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg shadow-black/5"><div className="flex flex-col gap-4 border-b border-[var(--border)] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><h2 className="text-lg font-semibold text-[var(--text-primary)]">{label(currentType)} Report</h2><p className="mt-1 text-xs text-[var(--text-muted)]">{generated ? `${rows.length} generated rows` : 'Configure filters and generate a report.'}</p></div><div className="flex flex-wrap gap-2"><ExportButton icon={Download} label="Export CSV" onClick={() => placeholder('CSV')}/><ExportButton icon={FileText} label="Export PDF" onClick={() => placeholder('PDF')}/><ExportButton icon={Printer} label="Print Report" onClick={() => placeholder('Print')}/></div></div>{generated ? <ReportTable type={currentType} data={rows}/> : <EmptyReport/>}</motion.section>
     <RecentReports reports={bootstrap.recentReports || []}/>

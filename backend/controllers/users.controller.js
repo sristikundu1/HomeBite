@@ -1,4 +1,5 @@
 import { getDB } from '../config/db.js';
+import { notifyAdmins } from '../services/notifications.service.js';
 
 function getUsersCollection() {
   return getDB().collection('users');
@@ -79,6 +80,11 @@ export async function saveFirebaseUser(req, res) {
 
     if (!existingUser) {
       await usersCollection.insertOne(buildUserDocument({ name, email, photo, firebaseUid }));
+      await notifyAdmins({
+        type: 'user',
+        title: 'New user registered',
+        message: `${name || email} joined HomeBite as a customer.`
+      });
 
       return res.status(201).json({
         success: true,

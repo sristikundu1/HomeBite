@@ -94,7 +94,7 @@ function HeroSlider() {
             <SwiperSlide key={slide.id} className="h-full">
               <div className="relative h-full w-full">
                 <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute inset-0 bg-black/45 dark:bg-black/30" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/80" />
               </div>
             </SwiperSlide>
@@ -192,7 +192,7 @@ function HeroSlider() {
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="max-w-[200px] rounded-3xl border border-[var(--border)] bg-[var(--bg-panel)] p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl"
+            className="max-w-[200px] rounded-3xl border border-white/20 bg-slate-950/72 p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl dark:border-[var(--border)] dark:bg-[var(--bg-panel)]"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-100">Top Rated</div>
             <div className="mt-3 text-3xl font-semibold text-white">4.9+</div>
@@ -205,7 +205,7 @@ function HeroSlider() {
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="max-w-[180px] rounded-3xl border border-[var(--border)] bg-[var(--bg-panel)] p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl"
+            className="max-w-[180px] rounded-3xl border border-white/20 bg-slate-950/72 p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl dark:border-[var(--border)] dark:bg-[var(--bg-panel)]"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-100">Quick delivery</div>
             <div className="mt-3 text-3xl font-semibold text-white">30 mins</div>
@@ -222,7 +222,7 @@ function HeroSlider() {
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 6.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="max-w-[200px] rounded-3xl border border-[var(--border)] bg-[var(--bg-panel)] p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl"
+            className="max-w-[200px] rounded-3xl border border-white/20 bg-slate-950/72 p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl dark:border-[var(--border)] dark:bg-[var(--bg-panel)]"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-100">Chef spotlight</div>
             <div className="mt-3 flex items-center gap-3">
@@ -242,7 +242,7 @@ function HeroSlider() {
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="max-w-[180px] rounded-3xl border border-[var(--border)] bg-[var(--bg-panel)] p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl"
+            className="max-w-[180px] rounded-3xl border border-white/20 bg-slate-950/72 p-4 text-left shadow-[var(--shadow-soft)] backdrop-blur-xl dark:border-[var(--border)] dark:bg-[var(--bg-panel)]"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-100">Order count</div>
             <div className="mt-3 text-3xl font-semibold text-white">1.2K+</div>

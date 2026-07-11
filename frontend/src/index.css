@@ -53,6 +53,23 @@ html.dark {
   --placeholder: #94a3b8;
 }
 
+/* Light-mode contrast protection for secondary copy rendered on intentionally dark media surfaces. */
+html:not(.dark) [class*="text-white/45"],
+html:not(.dark) [class*="text-white/50"],
+html:not(.dark) [class*="text-white/55"],
+html:not(.dark) [class*="text-white/60"],
+html:not(.dark) [class*="text-white/65"] {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+html:not(.dark) [class*="text-white/70"],
+html:not(.dark) [class*="text-white/75"],
+html:not(.dark) [class*="text-white/78"],
+html:not(.dark) [class*="text-white/80"],
+html:not(.dark) [class*="text-white/82"] {
+  color: rgba(255, 255, 255, 0.92);
+}
+
 * {
   box-sizing: border-box;
 }

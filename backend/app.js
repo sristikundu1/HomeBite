@@ -15,6 +15,7 @@ import chefSettingsRoutes from './routes/chefSettings.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import blogsRoutes from './routes/blogs.routes.js';
 import chefsRoutes from './routes/chefs.routes.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/chef', chefSettingsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/blogs', blogsRoutes);
 app.use('/chefs', chefsRoutes);
+app.use('/newsletter', newsletterRoutes);
 
 app.get('/', (req, res) => {
   res.json({

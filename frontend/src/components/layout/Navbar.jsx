@@ -44,7 +44,7 @@ function Navbar() {
       className={`fixed inset-x-0 top-0 z-50 border-b transition duration-400 ${
         scrolled
           ? 'bg-[var(--bg-surface)]/90 backdrop-blur-xl border-[var(--border)] shadow-sm'
-          : 'bg-transparent border-transparent'
+          : 'bg-white/85 backdrop-blur-xl border-white/60 shadow-sm dark:bg-transparent dark:border-transparent dark:shadow-none dark:backdrop-blur-none'
       }`}
     >
       <div className="mx-auto flex max-w-[1300px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">

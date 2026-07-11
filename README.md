@@ -2,7 +2,6 @@
 
 <div align="center">
 
-![HomeBite Banner](./public/banner.png)
 
 ### Connecting Local Home Chefs with Food Lovers
 
